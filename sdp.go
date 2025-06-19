@@ -1,6 +1,8 @@
 package sdp
 
 import (
+	"cmp"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -150,15 +152,66 @@ func (s *Session) GetEffectivePTime() string {
 // 	return ""
 // }
 
-func (s *Session) GetEffectiveConnection(media *Media) string {
+func (s *Session) GetEffectiveMediaIPv4(media *Media) string {
 	var ipv4 string
 	for i := range media.Connection {
 		ipv4 = media.Connection[i].Address
-		if ipv4 != "" {
+		if ipv4 != "" && ipv4 != "0.0.0.0" {
 			return ipv4
 		}
 	}
 	return s.Connection.Address
+}
+
+func (s *Session) GetMediaFlow(medType string) *Media {
+	for _, media := range s.Media {
+		if media.Type == medType {
+			return media
+		}
+	}
+	return nil
+}
+
+func (s *Session) GetEffectiveMediaSocket(media *Media) string {
+	var ipv4 string
+
+	for i := range media.Connection {
+		ip := media.Connection[i].Address
+		if ip != "" && ip != "0.0.0.0" {
+			ipv4 = ip
+			break
+		}
+	}
+
+	if ipv4 = cmp.Or(ipv4, s.Connection.Address); ipv4 == "" || media.Port <= 0 {
+		return ""
+	}
+
+	return fmt.Sprintf("%s:%d", ipv4, media.Port)
+}
+
+func (s *Session) GetEffectiveConnectionForMedia(medType string) string {
+	for _, media := range s.Media {
+		if media.Type == medType {
+			return s.GetEffectiveMediaIPv4(media)
+		}
+	}
+	return ""
+}
+
+func (s *Session) SetConnection(medType, IPv4 string, Port int) {
+	for _, media := range s.Media {
+		if media.Type == medType {
+			media.Connection = nil
+			media.Connection = append(media.Connection, &Connection{
+				Network: NetworkInternet,
+				Type:    TypeIPv4,
+				Address: IPv4,
+			})
+			media.Port = Port
+			return
+		}
+	}
 }
 
 func (s *Session) IsT38Image() bool {
@@ -195,7 +248,7 @@ func (s *Session) IsCallHeld() bool {
 	if mode == SendOnly || mode == Inactive {
 		return true
 	}
-	if ipv4 := s.GetEffectiveConnection(media); ipv4 == "" || ipv4 == "0.0.0.0" {
+	if ipv4 := s.GetEffectiveMediaIPv4(media); ipv4 == "" || ipv4 == "0.0.0.0" {
 		return true
 	}
 	return false
