@@ -199,15 +199,28 @@ func (s *Session) GetEffectiveConnectionForMedia(medType string) string {
 	return ""
 }
 
-func (s *Session) SetConnection(medType, IPv4 string, Port int) {
+func (s *Session) SetConnection(medType, IPv4 string, Port int, setGlobal bool) {
+	if medType == "" {
+		return
+	}
+
+	conn := &Connection{
+		Network: NetworkInternet,
+		Type:    TypeIPv4,
+		Address: IPv4,
+	}
+
+	if setGlobal {
+		s.Connection = conn
+		for _, media := range s.Media {
+			media.Connection = nil
+		}
+	}
+
 	for _, media := range s.Media {
 		if media.Type == medType {
 			media.Connection = nil
-			media.Connection = append(media.Connection, &Connection{
-				Network: NetworkInternet,
-				Type:    TypeIPv4,
-				Address: IPv4,
-			})
+			media.Connection = append(media.Connection, conn)
 			media.Port = Port
 			return
 		}
