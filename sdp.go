@@ -214,7 +214,12 @@ func (s *Session) SetConnection(medType, IPv4 string, Port int, setGlobal bool) 
 		s.Connection = conn
 		for _, media := range s.Media {
 			media.Connection = nil
+			if media.Type == medType {
+				media.Connection = nil
+				media.Port = Port
+			}
 		}
+		return
 	}
 
 	for _, media := range s.Media {
