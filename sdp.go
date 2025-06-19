@@ -163,15 +163,6 @@ func (s *Session) GetEffectiveMediaIPv4(media *Media) string {
 	return s.Connection.Address
 }
 
-func (s *Session) GetMediaFlow(medType string) *Media {
-	for _, media := range s.Media {
-		if media.Type == medType {
-			return media
-		}
-	}
-	return nil
-}
-
 func (s *Session) GetEffectiveMediaSocket(media *Media) string {
 	var ipv4 string
 
@@ -197,6 +188,15 @@ func (s *Session) GetEffectiveConnectionForMedia(medType string) string {
 		}
 	}
 	return ""
+}
+
+func (s *Session) GetMediaFlow(medType string) *Media {
+	for _, media := range s.Media {
+		if media.Type == medType {
+			return media
+		}
+	}
+	return nil
 }
 
 func (s *Session) SetConnection(medType, IPv4 string, Port int, setGlobal bool) {
