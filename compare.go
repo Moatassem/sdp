@@ -93,7 +93,8 @@ func compareOrigins(a, b *Origin) bool {
 	if a == nil || b == nil {
 		return a == b
 	}
-	return a.Username == b.Username && a.SessionID == b.SessionID && a.SessionVersion == b.SessionVersion &&
+	// does not make sense to compare a.SessionVersion == b.SessionVersion
+	return a.Username == b.Username && a.SessionID == b.SessionID &&
 		a.Network == b.Network && a.Type == b.Type && a.Address == b.Address
 }
 

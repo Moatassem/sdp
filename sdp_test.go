@@ -1,6 +1,8 @@
 package sdp_test
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"testing"
 
@@ -172,4 +174,84 @@ a=sctpmap:5000 webrtc-datachannel 1024
 		}
 	})
 
+}
+
+func BenchmarkEqualSDP(b *testing.B) {
+	sdp1 := `v=0
+o=- 3849203748 3849203748 IN IP4 192.0.2.1
+s=Multimedia Session Example
+t=0 0
+a=group:BUNDLE audio video data
+a=msid-semantic: WMS myStream
+c=IN IP4 203.0.113.1
+m=audio 49170 RTP/AVP 0 96
+c=IN IP4 203.0.113.2
+a=rtpmap:0 PCMU/8000
+a=rtpmap:96 opus/48000/2
+a=fmtp:96 minptime=10;useinbandfec=1
+a=sendrecv
+a=mid:audio
+a=ssrc:1001 cname:audioCname
+m=video 51372 RTP/AVP 97 98
+c=IN IP4 203.0.113.3
+a=rtpmap:97 H264/90000
+a=rtpmap:98 VP8/90000
+a=fmtp:97 profile-level-id=42e01f;packetization-mode=1
+a=sendrecv
+a=mid:video
+a=ssrc:1002 cname:videoCname
+m=application 50000 DTLS/SCTP 5000
+c=IN IP4 203.0.113.4
+a=mid:data
+a=sctpmap:5000 webrtc-datachannel 1024
+`
+	sdp2 := `v=0
+o=- 2508 1 IN IP4 192.168.1.2
+s=sipclientgo/1.0
+c=IN IP4 192.168.1.2
+t=0 0
+m=audio 51191 RTP/AVP 9 8 0 101
+a=rtpmap:9 G722/8000
+a=rtpmap:8 PCMA/8000
+a=rtpmap:0 PCMU/8000
+a=rtpmap:101 telephone-event/8000
+a=fmtp:101 0-16
+a=sendonly
+a=ssrc:7345055
+`
+
+	b.Run("Hash 256 SHA", func(b *testing.B) {
+		hash1 := hashSDPBytes([]byte(sdp1))
+		for b.Loop() {
+			bytes2 := []byte(sdp2)
+			_ = hash1 == hashSDPBytes(bytes2)
+			_ = string(bytes2)
+		}
+	})
+
+	// b.Run("Equal SDP - One computed", func(b *testing.B) {
+	// 	ses1, _ := sdp.ParseString(sdp1)
+	// 	for b.Loop() {
+	// 		ses2, _ := sdp.ParseString(sdp2)
+	// 		_ = ses1.Equals(ses2)
+	// 	}
+	// })
+
+	b.Run("Equal SDP - Precomputed", func(b *testing.B) {
+		ses1, _ := sdp.ParseString(sdp1)
+		ses2, _ := sdp.ParseString(sdp2)
+		for b.Loop() {
+			_ = ses1.Equals(ses2)
+			_ = ses2.Bytes()
+		}
+	})
+}
+
+func bytesToHexString(data []byte) string {
+	return hex.EncodeToString(data)
+}
+
+func hashSDPBytes(bytes []byte) string {
+	hash := sha256.Sum256(bytes)
+	return bytesToHexString(hash[:])
 }
