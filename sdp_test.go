@@ -128,6 +128,11 @@ a=ssrc:7345055
 		if conn != "10.0.0.1:55841" {
 			t.Errorf("expected connection to be %s, got %s", "10.0.0.1:55841", conn)
 		}
+
+		addr := ses.GetEffectiveMediaUdpAddr(sdp.Audio)
+		if addr.String() != "10.0.0.1:55841" {
+			t.Errorf("expected connection to be %s, got %s", "10.0.0.1:55841", conn)
+		}
 	})
 
 	t.Run("Set and Check Effective Socket globalized", func(t *testing.T) {
@@ -170,6 +175,11 @@ a=sctpmap:5000 webrtc-datachannel 1024
 		conn := ses.GetEffectiveMediaSocket(ses.GetMediaFlow(sdp.Audio))
 
 		if conn != "192.168.1.2:55841" {
+			t.Errorf("expected connection to be %s, got %s", "192.168.1.2:55841", conn)
+		}
+
+		addr := ses.GetEffectiveMediaUdpAddr(sdp.Audio)
+		if addr.String() != "192.168.1.2:55841" {
 			t.Errorf("expected connection to be %s, got %s", "192.168.1.2:55841", conn)
 		}
 	})

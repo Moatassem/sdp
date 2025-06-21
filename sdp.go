@@ -3,6 +3,7 @@ package sdp
 import (
 	"cmp"
 	"fmt"
+	"net"
 	"strings"
 	"time"
 )
@@ -142,16 +143,6 @@ func (s *Session) GetEffectivePTime() string {
 	return "20"
 }
 
-// func (attrbs Attributes) GetAttributeValue(nm string) string {
-// 	for i := 0; i < len(attrbs); i++ {
-// 		attrb := attrbs[i]
-// 		if attrb.Name == "ptime" {
-// 			return attrb.Value
-// 		}
-// 	}
-// 	return ""
-// }
-
 func (s *Session) GetEffectiveMediaIPv4(media *Media) string {
 	var ipv4 string
 	for i := range media.Connection {
@@ -188,6 +179,16 @@ func (s *Session) GetEffectiveConnectionForMedia(medType string) string {
 		}
 	}
 	return ""
+}
+
+func (s *Session) GetEffectiveMediaUdpAddr(medType string) *net.UDPAddr {
+	media := s.GetMediaFlow(medType)
+	if media == nil {
+		return nil
+	}
+	skt := s.GetEffectiveMediaSocket(media)
+	addr, _ := net.ResolveUDPAddr("udp", skt)
+	return addr
 }
 
 func (s *Session) GetMediaFlow(medType string) *Media {
