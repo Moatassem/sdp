@@ -9,12 +9,26 @@ type Codec struct {
 
 var (
 	SupportedCodecs = []uint8{PCMA, PCMU, G722, G729}
-	mapCodecs       map[uint8]string
+	mapCodecs       = map[uint8]string{
+		PCMU:    "PCMU",
+		GSM:     "GSM",
+		G723:    "G723",
+		DVI4:    "DVI4",
+		LPC:     "LPC",
+		PCMA:    "PCMA",
+		G722:    "G722",
+		L16:     "L16",
+		QCELP:   "QCELP",
+		CN:      "CN",
+		MPA:     "MPA",
+		G728:    "G728",
+		G729:    "G729",
+		RFC4733: "telephone-event",
+	}
 )
 
 const (
-	ContentType     = "application/sdp"
-	TelephoneEvents = "telephone-event"
+	ContentType = "application/sdp"
 )
 
 const (
@@ -33,8 +47,8 @@ const (
 	G728  uint8 = 15
 	// DVI4   = 16
 	// DVI4   = 17
-	G729            uint8 = 18
-	Telephone_Event uint8 = 101
+	G729    uint8 = 18
+	RFC4733 uint8 = 101
 
 //	0,PCMU,8000,1
 //

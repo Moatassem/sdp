@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+var epoch = time.Date(1900, time.January, 1, 0, 0, 0, 0, time.UTC)
+
 func init() {
 	mapCodecs = map[uint8]string{
 		0:   "PCMU",
@@ -113,7 +115,7 @@ func getFormat(codec uint8) *Format {
 		ClockRate: 8000,
 		Channels:  1,
 	}
-	if codec == Telephone_Event {
+	if codec == RFC4733 {
 		frmt.Params = append(frmt.Params, "0-16")
 	}
 	return frmt
@@ -500,6 +502,101 @@ func (m *Media) FormatByPayload(payload uint8) *Format {
 	return nil
 }
 
+func (m *Media) FormatByName(frmt uint8) *Format {
+	codecname, ok := mapCodecs[frmt]
+	if !ok {
+		return nil
+	}
+	for _, f := range m.Format {
+		if f.Name == codecname {
+			return f
+		}
+	}
+	return nil
+}
+
+func (m *Media) FilterFormatsByName(frmts ...uint8) {
+	m.findFormatByName(false, frmts...)
+}
+
+func (m *Media) DropFormatsByName(frmts ...uint8) {
+	m.findFormatByName(true, frmts...)
+}
+
+func (m *Media) FilterFormatsByPayload(frmts ...uint8) {
+	m.findFormatByPayload(false, frmts...)
+}
+
+func (m *Media) DropFormatsByPayload(frmts ...uint8) {
+	m.findFormatByPayload(true, frmts...)
+}
+
+func (m *Media) findFormatByName(drop bool, frmts ...uint8) {
+	formatNames := make(map[string]any, len(frmts))
+	for _, v := range frmts {
+		codecname, ok := mapCodecs[v]
+		if !ok {
+			continue
+		}
+		formatNames[codecname] = nil
+	}
+	if len(formatNames) == 0 {
+		return
+	}
+
+	i := 0
+	if drop {
+		for i < len(m.Format) {
+			f := m.Format[i]
+			if _, ok := formatNames[f.Name]; ok {
+				m.Format = append(m.Format[:i], m.Format[i+1:]...)
+				continue
+			}
+			i++
+		}
+		return
+	}
+	for i < len(m.Format) {
+		f := m.Format[i]
+		if _, ok := formatNames[f.Name]; ok {
+			i++
+			continue
+		}
+		m.Format = append(m.Format[:i], m.Format[i+1:]...)
+	}
+}
+
+func (m *Media) findFormatByPayload(drop bool, frmts ...uint8) {
+	formats := make(map[uint8]any, len(frmts))
+	for _, v := range frmts {
+		formats[v] = nil
+	}
+	if len(formats) == 0 {
+		return
+	}
+
+	i := 0
+	if drop {
+		for i < len(m.Format) {
+			f := m.Format[i]
+			if _, ok := formats[f.Payload]; ok {
+				m.Format = append(m.Format[:i], m.Format[i+1:]...)
+				continue
+			}
+			i++
+		}
+		return
+	}
+	for i < len(m.Format) {
+		f := m.Format[i]
+		if _, ok := formats[f.Payload]; ok {
+			i++
+			continue
+		}
+		m.Format = append(m.Format[:i], m.Format[i+1:]...)
+	}
+}
+
 // Format is a media format description represented by "rtpmap" attributes.
 type Format struct {
 	Payload   uint8
@@ -513,8 +610,6 @@ type Format struct {
 func (f *Format) String() string {
 	return f.Name
 }
-
-var epoch = time.Date(1900, time.January, 1, 0, 0, 0, 0, time.UTC)
 
 func isRTP(media, proto string) bool {
 	switch media {
