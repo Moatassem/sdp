@@ -115,7 +115,7 @@ func getFormat(codec uint8) *Format {
 		ClockRate: 8000,
 		Channels:  1,
 	}
-	if codec == RFC4733 {
+	if codec == RFC4733PT {
 		frmt.Params = append(frmt.Params, "0-16")
 	}
 	return frmt
@@ -197,6 +197,26 @@ func (s *Session) GetMediaFlow(medType string) *Media {
 	for _, media := range s.Media {
 		if media.Type == medType {
 			return media
+		}
+	}
+	return nil
+}
+
+func (src *Session) AlignMediaFlows(dst *Session) error {
+	srcMediaMap := make(map[string]*Media, len(src.Media))
+	for _, media := range src.Media {
+		if _, ok := srcMediaMap[media.Type]; ok {
+			return fmt.Errorf("duplicate media type [%s] in source session - Not supported", media.Type)
+		}
+		srcMediaMap[media.Type] = media
+	}
+	// need to check if SDP of src contains distinct media types
+	src.Media = make([]*Media, 0, len(dst.Media))
+	for _, media := range dst.Media {
+		if flow, ok := srcMediaMap[media.Type]; ok {
+			src.Media = append(src.Media, flow)
+		} else {
+			src.Media = append(src.Media, media.Clone(0))
 		}
 	}
 	return nil
@@ -492,6 +512,31 @@ loop:
 	return attrs[:n]
 }
 
+func (m *Media) Clone(prt int) *Media {
+	mediaclone := new(Media)
+	mediaclone.Chosen = m.Chosen
+	mediaclone.Type = m.Type
+	mediaclone.Port = prt
+	mediaclone.PortNum = m.PortNum
+	mediaclone.Proto = m.Proto
+	mediaclone.Information = m.Information
+	mediaclone.Connection = nil
+	mediaclone.Bandwidth = nil
+	mediaclone.Key = nil
+
+	mediaclone.Attributes = make(Attributes, len(m.Attributes))
+	copy(mediaclone.Attributes, m.Attributes)
+
+	mediaclone.Mode = ""
+
+	mediaclone.Format = make([]*Format, len(m.Format))
+	copy(mediaclone.Format, m.Format)
+
+	mediaclone.FormatDescr = m.FormatDescr
+
+	return mediaclone
+}
+
 // FormatByPayload returns format description by payload type.
 func (m *Media) FormatByPayload(payload uint8) *Format {
 	for _, f := range m.Format {
@@ -502,24 +547,55 @@ func (m *Media) FormatByPayload(payload uint8) *Format {
 	return nil
 }
 
-func (m *Media) FormatByName(frmt uint8) *Format {
-	codecname, ok := mapCodecs[frmt]
-	if !ok {
-		return nil
-	}
+func (m *Media) FormatByName(frmt string) *Format {
 	for _, f := range m.Format {
-		if f.Name == codecname {
+		if strings.EqualFold(f.Name, frmt) {
 			return f
 		}
 	}
 	return nil
 }
 
-func (m *Media) FilterFormatsByName(frmts ...uint8) {
+func (m *Media) OrderFormatsByName(filterformats ...string) {
+	if len(filterformats) == 0 || len(filterformats) == 1 && filterformats[0] == "*" {
+		return
+	}
+
+	filterformatsmap := make(map[string]any, len(filterformats))
+	for _, fnm := range filterformats {
+		filterformatsmap[strings.ToLower(fnm)] = nil
+	}
+
+	formatsmap := make(map[string]*Format, len(m.Format))
+	formats := make([]string, len(m.Format))
+	for i, f := range m.Format {
+		formatsmap[f.Name] = f
+		formats[i] = f.Name
+	}
+
+	m.Format = make([]*Format, 0, len(m.Format))
+	for _, ff := range filterformats {
+		if ff == "*" {
+			for _, f := range formats {
+				flower := strings.ToLower(f)
+				if _, ok := filterformatsmap[flower]; !ok {
+					m.Format = append(m.Format, formatsmap[f])
+				}
+			}
+			continue
+		}
+		if f, ok := formatsmap[ff]; ok {
+			m.Format = append(m.Format, f)
+		}
+	}
+
+}
+
+func (m *Media) FilterFormatsByName(frmts ...string) {
 	m.findFormatByName(false, frmts...)
 }
 
-func (m *Media) DropFormatsByName(frmts ...uint8) {
+func (m *Media) DropFormatsByName(frmts ...string) {
 	m.findFormatByName(true, frmts...)
 }
 
@@ -531,14 +607,10 @@ func (m *Media) DropFormatsByPayload(frmts ...uint8) {
 	m.findFormatByPayload(true, frmts...)
 }
 
-func (m *Media) findFormatByName(drop bool, frmts ...uint8) {
+func (m *Media) findFormatByName(drop bool, frmts ...string) {
 	formatNames := make(map[string]any, len(frmts))
 	for _, v := range frmts {
-		codecname, ok := mapCodecs[v]
-		if !ok {
-			continue
-		}
-		formatNames[codecname] = nil
+		formatNames[v] = nil
 	}
 	if len(formatNames) == 0 {
 		return

@@ -3,7 +3,6 @@ package sdp_test
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"testing"
 
 	"github.com/Moatassem/sdp"
@@ -34,20 +33,20 @@ a=ssrc:7345055
 		})
 
 		t.Run("G722 Channels", func(t *testing.T) {
-			g722channels := ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.G722).Channels
+			g722channels := ses.GetMediaFlow(sdp.Audio).FormatByName("G722").Channels
 			if g722channels != 3 {
 				t.Errorf("expected G722 channels to be 3, got %d", g722channels)
 			}
 		})
 
 		t.Run("PCMA Channels", func(t *testing.T) {
-			pcmaChannels := ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.PCMA).Channels
+			pcmaChannels := ses.GetMediaFlow(sdp.Audio).FormatByName("PCMA").Channels
 			if pcmaChannels != 2 {
 				t.Errorf("expected PCMA channels to be 2, got %d", pcmaChannels)
 			}
 		})
 		t.Run("PCMU Channels", func(t *testing.T) {
-			pcmuChannels := ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.PCMU).Channels
+			pcmuChannels := ses.GetMediaFlow(sdp.Audio).FormatByName("PCMU").Channels
 			if pcmuChannels != 1 {
 				t.Errorf("expected PCMU channels to be 1, got %d", pcmuChannels)
 			}
@@ -88,38 +87,38 @@ a=ssrc:7345055
 
 		t.Run("Drop G722 only", func(t *testing.T) {
 			ses, _ := sdp.ParseString(sdpString)
-			ses.GetMediaFlow(sdp.Audio).DropFormatsByName(sdp.G722)
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.G722) != nil {
+			ses.GetMediaFlow(sdp.Audio).DropFormatsByName("G722")
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("G722") != nil {
 				t.Errorf("expected G722 format to be dropped, but it still exists")
 			}
 		})
 
 		t.Run("Drop G722 & PCMA", func(t *testing.T) {
 			ses, _ := sdp.ParseString(sdpString)
-			ses.GetMediaFlow(sdp.Audio).DropFormatsByName(sdp.G722, sdp.PCMA)
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.G722) != nil {
+			ses.GetMediaFlow(sdp.Audio).DropFormatsByName("G722", "PCMA")
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("G722") != nil {
 				t.Errorf("expected G722 format to be dropped, but it still exists")
 			}
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.PCMA) != nil {
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("PCMA") != nil {
 				t.Errorf("expected PCMA format to be dropped, but it still exists")
 			}
 		})
 
 		t.Run("Drop PCMA & RFC4733", func(t *testing.T) {
 			ses, _ := sdp.ParseString(sdpString)
-			ses.GetMediaFlow(sdp.Audio).DropFormatsByName(sdp.PCMA, sdp.RFC4733)
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.PCMA) != nil {
+			ses.GetMediaFlow(sdp.Audio).DropFormatsByName("PCMA", "RFC4733")
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("PCMA") != nil {
 				t.Errorf("expected PCMA format to be dropped, but it still exists")
 			}
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.RFC4733) != nil {
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("RFC4733") != nil {
 				t.Errorf("expected RFC4733 format to be dropped, but it still exists")
 			}
 		})
 
 		t.Run("Drop RFC4733 only", func(t *testing.T) {
 			ses, _ := sdp.ParseString(sdpString)
-			ses.GetMediaFlow(sdp.Audio).DropFormatsByName(sdp.RFC4733)
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.RFC4733) != nil {
+			ses.GetMediaFlow(sdp.Audio).DropFormatsByName("RFC4733")
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("RFC4733") != nil {
 				t.Errorf("expected RFC4733 format to be dropped, but it still exists")
 			}
 		})
@@ -152,27 +151,27 @@ a=ssrc:7345055
 
 		t.Run("Filter G722 only", func(t *testing.T) {
 			ses, _ := sdp.ParseString(sdpString)
-			ses.GetMediaFlow(sdp.Audio).FilterFormatsByName(sdp.G722)
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.G722) == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 1 {
+			ses.GetMediaFlow(sdp.Audio).FilterFormatsByName("G722")
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("G722") == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 1 {
 				t.Errorf("expected G722 format to be filtered, but was dropped")
 			}
 		})
 
 		t.Run("Filter G722 & PCMA", func(t *testing.T) {
 			ses, _ := sdp.ParseString(sdpString)
-			ses.GetMediaFlow(sdp.Audio).FilterFormatsByName(sdp.G722, sdp.PCMA)
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.G722) == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 2 {
+			ses.GetMediaFlow(sdp.Audio).FilterFormatsByName("G722", "PCMA")
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("G722") == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 2 {
 				t.Errorf("expected G722 format to be filtered, but was dropped")
 			}
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.PCMA) == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 2 {
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("PCMA") == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 2 {
 				t.Errorf("expected PCMA format to be filtered, but was dropped")
 			}
 		})
 
 		t.Run("Filter PCMA & RFC4733", func(t *testing.T) {
 			ses, _ := sdp.ParseString(sdpString)
-			ses.GetMediaFlow(sdp.Audio).FilterFormatsByName(sdp.PCMA, sdp.RFC4733)
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.PCMA) == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 2 {
+			ses.GetMediaFlow(sdp.Audio).FilterFormatsByName("PCMA", sdp.RFC4733)
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("PCMA") == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 2 {
 				t.Errorf("expected PCMA & RFC4733 format to be filtered, but was dropped")
 			}
 			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.RFC4733) == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 2 {
@@ -217,7 +216,7 @@ a=ssrc:7345055
 		t.Run("Drop G722 only", func(t *testing.T) {
 			ses, _ := sdp.ParseString(sdpString)
 			ses.GetMediaFlow(sdp.Audio).DropFormatsByPayload(sdp.G722)
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.G722) != nil {
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("G722") != nil {
 				t.Errorf("expected G722 format to be dropped, but it still exists")
 			}
 		})
@@ -225,29 +224,29 @@ a=ssrc:7345055
 		t.Run("Drop G722 & PCMA", func(t *testing.T) {
 			ses, _ := sdp.ParseString(sdpString)
 			ses.GetMediaFlow(sdp.Audio).DropFormatsByPayload(sdp.G722, sdp.PCMA)
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.G722) != nil {
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("G722") != nil {
 				t.Errorf("expected G722 format to be dropped, but it still exists")
 			}
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.PCMA) != nil {
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("PCMA") != nil {
 				t.Errorf("expected PCMA format to be dropped, but it still exists")
 			}
 		})
 
 		t.Run("Drop PCMA & RFC4733", func(t *testing.T) {
 			ses, _ := sdp.ParseString(sdpString)
-			ses.GetMediaFlow(sdp.Audio).DropFormatsByPayload(sdp.PCMA, sdp.RFC4733)
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.PCMA) != nil {
+			ses.GetMediaFlow(sdp.Audio).DropFormatsByPayload(sdp.PCMA, sdp.RFC4733PT)
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("PCMA") != nil {
 				t.Errorf("expected PCMA format to be dropped, but it still exists")
 			}
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.RFC4733) != nil {
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("RFC4733") != nil {
 				t.Errorf("expected RFC4733 format to be dropped, but it still exists")
 			}
 		})
 
 		t.Run("Drop RFC4733 only", func(t *testing.T) {
 			ses, _ := sdp.ParseString(sdpString)
-			ses.GetMediaFlow(sdp.Audio).DropFormatsByPayload(sdp.RFC4733)
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.RFC4733) != nil {
+			ses.GetMediaFlow(sdp.Audio).DropFormatsByPayload(sdp.RFC4733PT)
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("RFC4733") != nil {
 				t.Errorf("expected RFC4733 format to be dropped, but it still exists")
 			}
 		})
@@ -281,7 +280,7 @@ a=ssrc:7345055
 		t.Run("Filter G722 only", func(t *testing.T) {
 			ses, _ := sdp.ParseString(sdpString)
 			ses.GetMediaFlow(sdp.Audio).FilterFormatsByPayload(sdp.G722)
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.G722) == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 1 {
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("G722") == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 1 {
 				t.Errorf("expected G722 format to be filtered, but was dropped")
 			}
 		})
@@ -289,18 +288,18 @@ a=ssrc:7345055
 		t.Run("Filter G722 & PCMA", func(t *testing.T) {
 			ses, _ := sdp.ParseString(sdpString)
 			ses.GetMediaFlow(sdp.Audio).FilterFormatsByPayload(sdp.G722, sdp.PCMA)
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.G722) == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 2 {
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("G722") == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 2 {
 				t.Errorf("expected G722 format to be filtered, but was dropped")
 			}
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.PCMA) == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 2 {
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("PCMA") == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 2 {
 				t.Errorf("expected PCMA format to be filtered, but was dropped")
 			}
 		})
 
 		t.Run("Filter PCMA & RFC4733", func(t *testing.T) {
 			ses, _ := sdp.ParseString(sdpString)
-			ses.GetMediaFlow(sdp.Audio).FilterFormatsByPayload(sdp.PCMA, sdp.RFC4733)
-			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.PCMA) == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 2 {
+			ses.GetMediaFlow(sdp.Audio).FilterFormatsByPayload(sdp.PCMA, sdp.RFC4733PT)
+			if ses.GetMediaFlow(sdp.Audio).FormatByName("PCMA") == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 2 {
 				t.Errorf("expected PCMA & RFC4733 format to be filtered, but was dropped")
 			}
 			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.RFC4733) == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 2 {
@@ -310,7 +309,7 @@ a=ssrc:7345055
 
 		t.Run("Filter RFC4733 only", func(t *testing.T) {
 			ses, _ := sdp.ParseString(sdpString)
-			ses.GetMediaFlow(sdp.Audio).FilterFormatsByPayload(sdp.RFC4733)
+			ses.GetMediaFlow(sdp.Audio).FilterFormatsByPayload(sdp.RFC4733PT)
 			if ses.GetMediaFlow(sdp.Audio).FormatByName(sdp.RFC4733) == nil || len(ses.GetMediaFlow(sdp.Audio).Format) != 1 {
 				t.Errorf("expected RFC4733 format to be filtered, but was dropped")
 			}
@@ -481,7 +480,7 @@ a=sctpmap:5000 webrtc-datachannel 1024
 
 		ses.SetConnection(sdp.Audio, "192.168.1.2", 55841, true)
 
-		fmt.Println(ses.String())
+		// fmt.Println(ses.String())
 
 		conn := ses.GetEffectiveMediaSocket(ses.GetMediaFlow(sdp.Audio))
 
@@ -496,6 +495,334 @@ a=sctpmap:5000 webrtc-datachannel 1024
 	})
 }
 
+func TestGenerateSDPAnswer(t *testing.T) {
+
+	t.Run("Extended SDP Offer", func(t *testing.T) {
+		ses1, err := sdp.ParseString(`v=0
+o=- 3849203748 3849203748 IN IP4 192.0.2.1
+s=Multimedia Session Example
+t=0 0
+a=group:BUNDLE audio video data
+a=msid-semantic: WMS myStream
+c=IN IP4 203.0.113.1
+m=audio 49170 RTP/AVP 0 96
+c=IN IP4 203.0.113.2
+a=rtpmap:0 PCMU/8000
+a=rtpmap:96 opus/48000/2
+a=fmtp:96 minptime=10;useinbandfec=1
+a=sendrecv
+a=mid:audio
+a=ssrc:1001 cname:audioCname
+m=video 51372 RTP/AVP 97 98
+c=IN IP4 203.0.113.3
+a=rtpmap:97 H264/90000
+a=rtpmap:98 VP8/90000
+a=fmtp:97 profile-level-id=42e01f;packetization-mode=1
+a=sendrecv
+a=mid:video
+a=ssrc:1002 cname:videoCname
+m=application 50000 DTLS/SCTP 5000
+c=IN IP4 203.0.113.4
+a=mid:data
+a=sctpmap:5000 webrtc-datachannel 1024
+`)
+		if err != nil {
+			t.Fatalf("failed to parse SDP: %v", err)
+		}
+
+		ses2, err := sdp.ParseString(`v=0
+o=- 206 1 IN IP4 192.168.1.101
+s=session
+c=IN IP4 192.168.1.5
+b=CT:1000
+t=0 0
+m=audio 51624 RTP/AVP 97 101 13 0 8
+c=IN IP4 0.0.0.0
+a=rtcp:51625
+a=label:Audio
+a=sendrecv
+a=rtpmap:97 RED/8000
+a=rtpmap:101 telephone-event/8000
+a=fmtp:101 0-16
+a=rtpmap:13 CN/8000
+a=rtpmap:0 PCMU/8000
+a=rtpmap:8 PCMA/8000
+a=ptime:20
+`)
+		if err != nil {
+			t.Fatalf("failed to parse SDP: %v", err)
+		}
+
+		if err := ses2.AlignMediaFlows(ses1); err != nil {
+			t.Errorf("expected error to be nil, got %s", err)
+		}
+
+		for i, media := range ses2.Media {
+			if media.Type != ses1.Media[i].Type {
+				t.Errorf("expected media type %s, got %s", ses1.Media[i].Type, media.Type)
+			}
+			if media.Type != sdp.Audio && media.Port != 0 {
+				t.Errorf("expected media port to be 0 for %s, got %d", media.Type, media.Port)
+			}
+		}
+	})
+}
+
+func TestOrderSDPOffer(t *testing.T) {
+
+	t.Run("Order and Filter SDP Offer", func(t *testing.T) {
+		ses, err := sdp.ParseString(`v=0
+o=- 3849203748 3849203748 IN IP4 192.0.2.1
+s=Multimedia Session Example
+t=0 0
+a=group:BUNDLE audio video data
+a=msid-semantic: WMS myStream
+c=IN IP4 203.0.113.1
+m=audio 51191 RTP/AVP 9 8 0 96 101
+a=rtpmap:9 G722/8000/3
+a=rtpmap:8 PCMA/8000/2
+a=rtpmap:0 PCMU/8000/1
+a=rtpmap:96 opus/48000/2
+a=fmtp:96 minptime=10;useinbandfec=1
+a=rtpmap:101 telephone-event/8000
+a=fmtp:101 0-16
+a=sendrecv
+a=mid:audio
+a=ssrc:1001 cname:audioCname
+m=video 51372 RTP/AVP 97 98
+c=IN IP4 203.0.113.3
+a=rtpmap:97 H264/90000
+a=rtpmap:98 VP8/90000
+a=fmtp:97 profile-level-id=42e01f;packetization-mode=1
+a=sendrecv
+a=mid:video
+a=ssrc:1002 cname:videoCname
+m=application 50000 DTLS/SCTP 5000
+c=IN IP4 203.0.113.4
+a=mid:data
+a=sctpmap:5000 webrtc-datachannel 1024
+`)
+		if err != nil {
+			t.Fatalf("failed to parse SDP: %v", err)
+		}
+
+		mf := ses.GetMediaFlow(sdp.Audio)
+		mf.OrderFormatsByName("opus", "PCMU", "telephone-event")
+
+		if len(mf.Format) != 3 {
+			t.Errorf("expected 3 formats, got %d", len(mf.Format))
+		}
+
+		if mf.FormatByName("opus") == nil {
+			t.Errorf("expected Opus format to be present, but it was not found")
+		}
+		if mf.FormatByName("PcmU") == nil {
+			t.Errorf("expected PCMU format to be present, but it was not found")
+		}
+		if mf.FormatByName("telephone-event") == nil {
+			t.Errorf("expected Telephone Event format to be absent, but it was found")
+		}
+	})
+
+	t.Run("Order and Filter SDP Offer with *", func(t *testing.T) {
+		ses, err := sdp.ParseString(`v=0
+o=- 3849203748 3849203748 IN IP4 192.0.2.1
+s=Multimedia Session Example
+t=0 0
+a=group:BUNDLE audio video data
+a=msid-semantic: WMS myStream
+c=IN IP4 203.0.113.1
+m=audio 51191 RTP/AVP 9 8 0 96 101
+a=rtpmap:9 G722/8000/3
+a=rtpmap:8 PCMA/8000/2
+a=rtpmap:0 PCMU/8000/1
+a=rtpmap:96 opus/48000/2
+a=fmtp:96 minptime=10;useinbandfec=1
+a=rtpmap:101 telephone-event/8000
+a=fmtp:101 0-16
+a=sendrecv
+a=mid:audio
+a=ssrc:1001 cname:audioCname
+m=video 51372 RTP/AVP 97 98
+c=IN IP4 203.0.113.3
+a=rtpmap:97 H264/90000
+a=rtpmap:98 VP8/90000
+a=fmtp:97 profile-level-id=42e01f;packetization-mode=1
+a=sendrecv
+a=mid:video
+a=ssrc:1002 cname:videoCname
+m=application 50000 DTLS/SCTP 5000
+c=IN IP4 203.0.113.4
+a=mid:data
+a=sctpmap:5000 webrtc-datachannel 1024
+`)
+		if err != nil {
+			t.Fatalf("failed to parse SDP: %v", err)
+		}
+
+		mf := ses.GetMediaFlow(sdp.Audio)
+		mf.OrderFormatsByName("*")
+
+		if len(mf.Format) != 5 {
+			t.Errorf("expected 5 formats, got %d", len(mf.Format))
+		}
+	})
+
+	t.Run("Order and Filter SDP Offer with *, G729, PCMA", func(t *testing.T) {
+		ses, err := sdp.ParseString(`v=0
+o=- 3849203748 3849203748 IN IP4 192.0.2.1
+s=Multimedia Session Example
+t=0 0
+a=group:BUNDLE audio video data
+a=msid-semantic: WMS myStream
+c=IN IP4 203.0.113.1
+m=audio 51191 RTP/AVP 9 8 0 96 101
+a=rtpmap:9 G722/8000/3
+a=rtpmap:8 PCMA/8000/2
+a=rtpmap:0 PCMU/8000/1
+a=rtpmap:96 opus/48000/2
+a=fmtp:96 minptime=10;useinbandfec=1
+a=rtpmap:101 telephone-event/8000
+a=fmtp:101 0-16
+a=sendrecv
+a=mid:audio
+a=ssrc:1001 cname:audioCname
+m=video 51372 RTP/AVP 97 98
+c=IN IP4 203.0.113.3
+a=rtpmap:97 H264/90000
+a=rtpmap:98 VP8/90000
+a=fmtp:97 profile-level-id=42e01f;packetization-mode=1
+a=sendrecv
+a=mid:video
+a=ssrc:1002 cname:videoCname
+m=application 50000 DTLS/SCTP 5000
+c=IN IP4 203.0.113.4
+a=mid:data
+a=sctpmap:5000 webrtc-datachannel 1024
+`)
+		if err != nil {
+			t.Fatalf("failed to parse SDP: %v", err)
+		}
+
+		mf := ses.GetMediaFlow(sdp.Audio)
+		mf.OrderFormatsByName("*", "G729", "PCMA")
+
+		if len(mf.Format) != 5 {
+			t.Errorf("expected 5 formats, got %d", len(mf.Format))
+		}
+
+		if mf.Format[4].Name != "PCMA" {
+			t.Errorf("expected first format to be PCMA, got %s", mf.Format[0].Name)
+		}
+	})
+
+	t.Run("Order and Filter SDP Offer with PCMU, *", func(t *testing.T) {
+		ses, err := sdp.ParseString(`v=0
+o=- 3849203748 3849203748 IN IP4 192.0.2.1
+s=Multimedia Session Example
+t=0 0
+a=group:BUNDLE audio video data
+a=msid-semantic: WMS myStream
+c=IN IP4 203.0.113.1
+m=audio 51191 RTP/AVP 9 8 0 96 101
+a=rtpmap:9 G722/8000/3
+a=rtpmap:8 PCMA/8000/2
+a=rtpmap:0 PCMU/8000/1
+a=rtpmap:96 opus/48000/2
+a=fmtp:96 minptime=10;useinbandfec=1
+a=rtpmap:101 telephone-event/8000
+a=fmtp:101 0-16
+a=sendrecv
+a=mid:audio
+a=ssrc:1001 cname:audioCname
+m=video 51372 RTP/AVP 97 98
+c=IN IP4 203.0.113.3
+a=rtpmap:97 H264/90000
+a=rtpmap:98 VP8/90000
+a=fmtp:97 profile-level-id=42e01f;packetization-mode=1
+a=sendrecv
+a=mid:video
+a=ssrc:1002 cname:videoCname
+m=application 50000 DTLS/SCTP 5000
+c=IN IP4 203.0.113.4
+a=mid:data
+a=sctpmap:5000 webrtc-datachannel 1024
+`)
+		if err != nil {
+			t.Fatalf("failed to parse SDP: %v", err)
+		}
+
+		mf := ses.GetMediaFlow(sdp.Audio)
+		mf.OrderFormatsByName("PCMU", "*")
+
+		if len(mf.Format) != 5 {
+			t.Errorf("expected 5 formats, got %d", len(mf.Format))
+		}
+
+		if mf.Format[0].Name != "PCMU" {
+			t.Errorf("expected first format to be PCMU, got %s", mf.Format[0].Name)
+		}
+	})
+
+	t.Run("Order and Filter SDP Offer with G722, *, G729", func(t *testing.T) {
+		ses, err := sdp.ParseString(`v=0
+o=- 3849203748 3849203748 IN IP4 192.0.2.1
+s=Multimedia Session Example
+t=0 0
+a=group:BUNDLE audio video data
+a=msid-semantic: WMS myStream
+c=IN IP4 203.0.113.1
+m=audio 49170 RTP/AVP 0 8 9 18 96 97 98 99 100 101 102 103 104
+a=rtpmap:0 PCMU/8000
+a=rtpmap:8 PCMA/8000
+a=rtpmap:9 G722/8000
+a=rtpmap:18 G729/8000
+a=rtpmap:96 opus/48000/2
+a=fmtp:96 minptime=10;useinbandfec=1
+a=rtpmap:97 AMR/8000
+a=rtpmap:98 AMR-WB/16000
+a=rtpmap:99 speex/8000
+a=rtpmap:100 iLBC/8000
+a=rtpmap:101 telephone-event/8000
+a=fmtp:101 0-16
+a=rtpmap:102 GSM/8000
+a=rtpmap:103 LPC/8000
+a=rtpmap:104 SILK/24000
+a=sendrecv
+a=mid:audio
+a=ssrc:1001 cname:audioCname
+m=video 51372 RTP/AVP 97 98
+c=IN IP4 203.0.113.3
+a=rtpmap:97 H264/90000
+a=rtpmap:98 VP8/90000
+a=fmtp:97 profile-level-id=42e01f;packetization-mode=1
+a=sendrecv
+a=mid:video
+a=ssrc:1002 cname:videoCname
+m=application 50000 DTLS/SCTP 5000
+c=IN IP4 203.0.113.4
+a=mid:data
+a=sctpmap:5000 webrtc-datachannel 1024
+`)
+		if err != nil {
+			t.Fatalf("failed to parse SDP: %v", err)
+		}
+
+		mf := ses.GetMediaFlow(sdp.Audio)
+		mf.OrderFormatsByName("G722", "*", "G729")
+
+		if len(mf.Format) != 13 {
+			t.Errorf("expected 13 formats, got %d", len(mf.Format))
+		}
+
+		if mf.Format[0].Name != "G722" {
+			t.Errorf("expected first format to be G722, got %s", mf.Format[0].Name)
+		}
+		if mf.Format[12].Name != "G729" {
+			t.Errorf("expected last format to be G729, got %s", mf.Format[12].Name)
+		}
+	})
+}
 func BenchmarkEqualSDP(b *testing.B) {
 	sdp1 := `v=0
 o=- 3849203748 3849203748 IN IP4 192.0.2.1
