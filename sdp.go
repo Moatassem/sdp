@@ -561,9 +561,9 @@ func (m *Media) OrderFormatsByName(filterformats ...string) {
 		return
 	}
 
-	filterformatsmap := make(map[string]any, len(filterformats))
+	filterformatsmap := make(map[string]struct{}, len(filterformats))
 	for _, fnm := range filterformats {
-		filterformatsmap[strings.ToLower(fnm)] = nil
+		filterformatsmap[strings.ToLower(fnm)] = struct{}{}
 	}
 
 	formatsmap := make(map[string]*Format, len(m.Format))
@@ -608,64 +608,41 @@ func (m *Media) DropFormatsByPayload(frmts ...uint8) {
 }
 
 func (m *Media) findFormatByName(drop bool, frmts ...string) {
-	formatNames := make(map[string]any, len(frmts))
+	if len(frmts) == 0 {
+		return
+	}
+	formatNames := make(map[string]struct{}, len(frmts))
 	for _, v := range frmts {
-		formatNames[v] = nil
+		formatNames[v] = struct{}{}
 	}
-	if len(formatNames) == 0 {
-		return
-	}
-
-	i := 0
-	if drop {
-		for i < len(m.Format) {
-			f := m.Format[i]
-			if _, ok := formatNames[f.Name]; ok {
-				m.Format = append(m.Format[:i], m.Format[i+1:]...)
-				continue
-			}
-			i++
-		}
-		return
-	}
-	for i < len(m.Format) {
-		f := m.Format[i]
-		if _, ok := formatNames[f.Name]; ok {
-			i++
-			continue
-		}
-		m.Format = append(m.Format[:i], m.Format[i+1:]...)
-	}
+	m.filterFormats(drop, func(f *Format) bool {
+		_, ok := formatNames[f.Name]
+		return ok
+	})
 }
 
 func (m *Media) findFormatByPayload(drop bool, frmts ...uint8) {
-	formats := make(map[uint8]any, len(frmts))
+	if len(frmts) == 0 {
+		return
+	}
+	formatPayloads := make(map[uint8]struct{}, len(frmts))
 	for _, v := range frmts {
-		formats[v] = nil
+		formatPayloads[v] = struct{}{}
 	}
-	if len(formats) == 0 {
-		return
-	}
+	m.filterFormats(drop, func(f *Format) bool {
+		_, ok := formatPayloads[f.Payload]
+		return ok
+	})
+}
 
+func (m *Media) filterFormats(drop bool, matchFunc func(f *Format) bool) {
 	i := 0
-	if drop {
-		for i < len(m.Format) {
-			f := m.Format[i]
-			if _, ok := formats[f.Payload]; ok {
-				m.Format = append(m.Format[:i], m.Format[i+1:]...)
-				continue
-			}
-			i++
-		}
-		return
-	}
 	for i < len(m.Format) {
-		f := m.Format[i]
-		if _, ok := formats[f.Payload]; ok {
+		if matchFunc(m.Format[i]) == drop {
+			m.Format = append(m.Format[:i], m.Format[i+1:]...)
+		} else {
 			i++
-			continue
 		}
-		m.Format = append(m.Format[:i], m.Format[i+1:]...)
 	}
 }
 
