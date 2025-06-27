@@ -2,52 +2,52 @@ package sdp
 
 import "time"
 
-func (s *Session) Equals(other *Session) bool {
-	if s == other {
+func (ses *Session) Equals(other *Session) bool {
+	if ses == other {
 		return true
 	}
 	if other == nil {
 		return false
 	}
 
-	if s.Version != other.Version || s.Name != other.Name || s.Information != other.Information ||
-		s.URI != other.URI || s.Mode != other.Mode {
+	if ses.Version != other.Version || ses.Name != other.Name || ses.Information != other.Information ||
+		ses.URI != other.URI || ses.Mode != other.Mode {
 		return false
 	}
 
-	if !compareOrigins(s.Origin, other.Origin) {
+	if !compareOrigins(ses.Origin, other.Origin) {
 		return false
 	}
-	if !compareConnections(s.Connection, other.Connection) {
+	if !compareConnections(ses.Connection, other.Connection) {
 		return false
 	}
-	if !compareStringSlices(s.Email, other.Email) || !compareStringSlices(s.Phone, other.Phone) {
+	if !compareStringSlices(ses.Email, other.Email) || !compareStringSlices(ses.Phone, other.Phone) {
 		return false
 	}
-	if !compareBandwidths(s.Bandwidth, other.Bandwidth) {
+	if !compareBandwidths(ses.Bandwidth, other.Bandwidth) {
 		return false
 	}
-	if !compareTimeZones(s.TimeZone, other.TimeZone) {
+	if !compareTimeZones(ses.TimeZone, other.TimeZone) {
 		return false
 	}
-	if !compareKeys(s.Key, other.Key) {
+	if !compareKeys(ses.Key, other.Key) {
 		return false
 	}
-	if !compareTiming(s.Timing, other.Timing) {
+	if !compareTiming(ses.Timing, other.Timing) {
 		return false
 	}
-	if !compareRepeats(s.Repeat, other.Repeat) {
+	if !compareRepeats(ses.Repeat, other.Repeat) {
 		return false
 	}
-	if !compareAttributes(s.Attributes, other.Attributes) {
+	if !compareAttributes(ses.Attributes, other.Attributes) {
 		return false
 	}
 
-	if len(s.Media) != len(other.Media) {
+	if len(ses.Media) != len(other.Media) {
 		return false
 	}
-	for i := range s.Media {
-		if !s.Media[i].Equals(other.Media[i]) {
+	for i := range ses.Media {
+		if !ses.Media[i].Equals(other.Media[i]) {
 			return false
 		}
 	}

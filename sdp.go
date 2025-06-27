@@ -60,14 +60,14 @@ type Session struct {
 }
 
 // String returns the encoded session description as string.
-func (s *Session) String() string {
-	return string(s.Bytes())
+func (ses *Session) String() string {
+	return string(ses.Bytes())
 }
 
 // Bytes returns the encoded session description as buffer.
-func (s *Session) Bytes() []byte {
+func (ses *Session) Bytes() []byte {
 	e := NewEncoder(nil)
-	e.Encode(s)
+	e.Encode(ses)
 	return e.Bytes()
 }
 
@@ -122,8 +122,8 @@ func getFormat(codec uint8) *Format {
 }
 
 // Get Chosen Media Description
-func (s *Session) GetChosenMedia() *Media {
-	for _, m := range s.Media {
+func (ses *Session) GetChosenMedia() *Media {
+	for _, m := range ses.Media {
 		if m.Chosen {
 			return m
 		}
@@ -131,21 +131,21 @@ func (s *Session) GetChosenMedia() *Media {
 	return nil
 }
 
-func (s *Session) GetEffectivePTime() string {
-	media := s.GetChosenMedia()
+func (ses *Session) GetEffectivePTime() string {
+	media := ses.GetChosenMedia()
 	attrbnm := "ptime"
 	ptime := media.Attributes.Get(attrbnm)
 	if ptime != "" {
 		return ptime
 	}
-	ptime = s.Attributes.Get(attrbnm)
+	ptime = ses.Attributes.Get(attrbnm)
 	if ptime != "" {
 		return ptime
 	}
 	return "20"
 }
 
-func (s *Session) GetEffectiveMediaIPv4(media *Media) string {
+func (ses *Session) GetEffectiveMediaIPv4(media *Media) string {
 	var ipv4 string
 	for i := range media.Connection {
 		ipv4 = media.Connection[i].Address
@@ -153,10 +153,10 @@ func (s *Session) GetEffectiveMediaIPv4(media *Media) string {
 			return ipv4
 		}
 	}
-	return s.Connection.Address
+	return ses.Connection.Address
 }
 
-func (s *Session) GetEffectiveMediaSocket(media *Media) string {
+func (ses *Session) GetEffectiveMediaSocket(media *Media) string {
 	var ipv4 string
 
 	for i := range media.Connection {
@@ -167,34 +167,34 @@ func (s *Session) GetEffectiveMediaSocket(media *Media) string {
 		}
 	}
 
-	if ipv4 = cmp.Or(ipv4, s.Connection.Address); ipv4 == "" || media.Port <= 0 {
+	if ipv4 = cmp.Or(ipv4, ses.Connection.Address); ipv4 == "" || media.Port <= 0 {
 		return ""
 	}
 
 	return fmt.Sprintf("%s:%d", ipv4, media.Port)
 }
 
-func (s *Session) GetEffectiveConnectionForMedia(medType string) string {
-	for _, media := range s.Media {
+func (ses *Session) GetEffectiveConnectionForMedia(medType string) string {
+	for _, media := range ses.Media {
 		if media.Type == medType {
-			return s.GetEffectiveMediaIPv4(media)
+			return ses.GetEffectiveMediaIPv4(media)
 		}
 	}
 	return ""
 }
 
-func (s *Session) GetEffectiveMediaUdpAddr(medType string) *net.UDPAddr {
-	media := s.GetMediaFlow(medType)
+func (ses *Session) GetEffectiveMediaUdpAddr(medType string) *net.UDPAddr {
+	media := ses.GetMediaFlow(medType)
 	if media == nil {
 		return nil
 	}
-	skt := s.GetEffectiveMediaSocket(media)
+	skt := ses.GetEffectiveMediaSocket(media)
 	addr, _ := net.ResolveUDPAddr("udp", skt)
 	return addr
 }
 
-func (s *Session) GetMediaFlow(medType string) *Media {
-	for _, media := range s.Media {
+func (ses *Session) GetMediaFlow(medType string) *Media {
+	for _, media := range ses.Media {
 		if media.Type == medType {
 			return media
 		}
@@ -202,29 +202,29 @@ func (s *Session) GetMediaFlow(medType string) *Media {
 	return nil
 }
 
-func (src *Session) AlignMediaFlows(dst *Session) error {
-	srcMediaMap := make(map[string]*Media, len(src.Media))
-	for _, media := range src.Media {
+func (ses *Session) AlignMediaFlows(offer *Session) error {
+	srcMediaMap := make(map[string]*Media, len(ses.Media))
+	for _, media := range ses.Media {
 		if _, ok := srcMediaMap[media.Type]; ok {
 			return fmt.Errorf("duplicate media type [%s] in source session - Not supported", media.Type)
 		}
 		srcMediaMap[media.Type] = media
 	}
 	// need to check if SDP of src contains distinct media types
-	src.Media = make([]*Media, 0, len(dst.Media))
-	for _, media := range dst.Media {
+	ses.Media = make([]*Media, 0, len(offer.Media))
+	for _, media := range offer.Media {
 		if flow, ok := srcMediaMap[media.Type]; ok {
-			src.Media = append(src.Media, flow)
+			ses.Media = append(ses.Media, flow)
 		} else {
-			src.Media = append(src.Media, media.Clone(0))
+			ses.Media = append(ses.Media, media.Clone(0))
 		}
 	}
 	return nil
 }
 
-func (s *Session) SetConnection(medType, IPv4 string, Port int, setGlobal bool) {
+func (ses *Session) SetConnection(medType, IPv4 string, Port int, setGlobal bool) *Session {
 	if medType == "" {
-		return
+		return ses
 	}
 
 	conn := &Connection{
@@ -234,30 +234,98 @@ func (s *Session) SetConnection(medType, IPv4 string, Port int, setGlobal bool) 
 	}
 
 	if setGlobal {
-		s.Connection = conn
-		for _, media := range s.Media {
+		ses.Connection = conn
+		for _, media := range ses.Media {
 			media.Connection = nil
 			if media.Type == medType {
 				media.Connection = nil
 				media.Port = Port
 			}
 		}
-		return
+		return ses
 	}
 
-	for _, media := range s.Media {
+	for _, media := range ses.Media {
 		if media.Type == medType {
 			media.Connection = nil
 			media.Connection = append(media.Connection, conn)
 			media.Port = Port
-			return
+			return ses
 		}
 	}
+
+	return ses
 }
 
-func (s *Session) IsT38Image() bool {
-	for i := range s.Media {
-		media := s.Media[i]
+func (ses *Session) DropFlowsExcept(medType string) *Session {
+	for i := 0; i < len(ses.Media); {
+		if ses.Media[i].Type != medType {
+			ses.Media = append(ses.Media[:i], ses.Media[i+1:]...)
+		} else {
+			i++
+		}
+	}
+	return ses
+}
+
+func (ses *Session) DropFlows(medTypes ...string) *Session {
+	if len(medTypes) == 0 {
+		return ses
+	}
+	medTypesMap := make(map[string]struct{}, len(medTypes))
+	for _, mt := range medTypes {
+		medTypesMap[mt] = struct{}{}
+	}
+	for i := 0; i < len(ses.Media); {
+		if _, ok := medTypesMap[ses.Media[i].Type]; ok {
+			ses.Media = append(ses.Media[:i], ses.Media[i+1:]...)
+		} else {
+			i++
+		}
+	}
+	return ses
+}
+
+func (ses *Session) DisableFlowsExcept(medType string) *Session {
+	for _, mf := range ses.Media {
+		if mf.Type != medType {
+			mf.Port = 0
+		}
+	}
+	return ses
+}
+
+func (ses *Session) DisableFlows(medTypes ...string) *Session {
+	if len(medTypes) == 0 {
+		return ses
+	}
+	medTypesMap := make(map[string]struct{}, len(medTypes))
+	for _, mt := range medTypes {
+		medTypesMap[mt] = struct{}{}
+	}
+	for _, mf := range ses.Media {
+		if _, ok := medTypesMap[mf.Type]; ok {
+			mf.Port = 0
+		}
+	}
+	return ses
+}
+
+func (ses *Session) AreAllFlowsDroppedOrDisabled() bool {
+	if len(ses.Media) == 0 {
+		return true
+	}
+	for _, media := range ses.Media {
+		if media.Port > 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func (ses *Session) IsT38Image() bool {
+	for i := range ses.Media {
+		media := ses.Media[i]
 		if media.Type == Image && media.Port > 0 && media.Proto == Udptl && media.FormatDescr == "t38" {
 			return true
 		}
@@ -265,31 +333,31 @@ func (s *Session) IsT38Image() bool {
 	return false
 }
 
-func (s *Session) GetEffectiveMediaDirective() string {
-	media := s.GetChosenMedia()
+func (ses *Session) GetEffectiveMediaDirective() string {
+	media := ses.GetChosenMedia()
 	if media.Mode != "" {
 		return media.Mode
 	}
-	if s.Mode != "" {
-		return s.Mode
+	if ses.Mode != "" {
+		return ses.Mode
 	}
 	return SendRecv
 }
 
-func (s *Session) IsCallHeld() bool {
-	media := s.GetChosenMedia()
+func (ses *Session) IsCallHeld() bool {
+	media := ses.GetChosenMedia()
 	var mode string
 	if media.Mode != "" {
 		mode = media.Mode
-	} else if s.Mode != "" {
-		mode = s.Mode
+	} else if ses.Mode != "" {
+		mode = ses.Mode
 	} else {
 		mode = SendRecv
 	}
 	if mode == SendOnly || mode == Inactive {
 		return true
 	}
-	if ipv4 := s.GetEffectiveMediaIPv4(media); ipv4 == "" || ipv4 == "0.0.0.0" {
+	if ipv4 := ses.GetEffectiveMediaIPv4(media); ipv4 == "" || ipv4 == "0.0.0.0" {
 		return true
 	}
 	return false
@@ -588,7 +656,6 @@ func (m *Media) OrderFormatsByName(filterformats ...string) {
 			m.Format = append(m.Format, f)
 		}
 	}
-
 }
 
 func (m *Media) FilterFormatsByName(frmts ...string) {
@@ -636,8 +703,7 @@ func (m *Media) findFormatByPayload(drop bool, frmts ...uint8) {
 }
 
 func (m *Media) filterFormats(drop bool, matchFunc func(f *Format) bool) {
-	i := 0
-	for i < len(m.Format) {
+	for i := 0; i < len(m.Format); {
 		if matchFunc(m.Format[i]) == drop {
 			m.Format = append(m.Format[:i], m.Format[i+1:]...)
 		} else {

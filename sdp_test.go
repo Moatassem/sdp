@@ -530,6 +530,103 @@ a=sctpmap:5000 webrtc-datachannel 1024
 			t.Fatalf("failed to parse SDP: %v", err)
 		}
 
+		ses1.DisableFlows(sdp.Application, sdp.Video)
+		if ses1.GetMediaFlow(sdp.Application).Port != 0 {
+			t.Errorf("expected Application media port to be 0, got %d", ses1.GetMediaFlow(sdp.Application).Port)
+		}
+		ses1.GetMediaFlow(sdp.Application).Port = 23222
+		if ses1.GetMediaFlow(sdp.Video).Port != 0 {
+			t.Errorf("expected Video media port to be 0, got %d", ses1.GetMediaFlow(sdp.Video).Port)
+		}
+		ses1.GetMediaFlow(sdp.Video).Port = 23233
+
+		ses1.DisableFlowsExcept(sdp.Audio)
+		for _, media := range ses1.Media {
+			if media.Type != sdp.Audio && media.Port != 0 {
+				t.Errorf("expected media port to be 0 for %s, got %d", media.Type, media.Port)
+			}
+		}
+
+		if ses1.AreAllFlowsDroppedOrDisabled() {
+			t.Errorf("expected not all flows to be dropped or disabled, but they are")
+		}
+
+		ses2, err := sdp.ParseString(`v=0
+o=- 206 1 IN IP4 192.168.1.101
+s=session
+c=IN IP4 192.168.1.5
+b=CT:1000
+t=0 0
+m=audio 51624 RTP/AVP 97 101 13 0 8
+c=IN IP4 0.0.0.0
+a=rtcp:51625
+a=label:Audio
+a=sendrecv
+a=rtpmap:97 RED/8000
+a=rtpmap:101 telephone-event/8000
+a=fmtp:101 0-16
+a=rtpmap:13 CN/8000
+a=rtpmap:0 PCMU/8000
+a=rtpmap:8 PCMA/8000
+a=ptime:20
+`)
+		if err != nil {
+			t.Fatalf("failed to parse SDP: %v", err)
+		}
+
+		if err := ses2.AlignMediaFlows(ses1); err != nil {
+			t.Errorf("expected error to be nil, got %s", err)
+		}
+
+		for i, media := range ses2.Media {
+			if media.Type != ses1.Media[i].Type {
+				t.Errorf("expected media type %s, got %s", ses1.Media[i].Type, media.Type)
+			}
+			if media.Type != sdp.Audio && media.Port != 0 {
+				t.Errorf("expected media port to be 0 for %s, got %d", media.Type, media.Port)
+			}
+		}
+	})
+
+	t.Run("Drop All flows in Extended SDP Offer", func(t *testing.T) {
+		ses1, err := sdp.ParseString(`v=0
+o=- 3849203748 3849203748 IN IP4 192.0.2.1
+s=Multimedia Session Example
+t=0 0
+a=group:BUNDLE audio video data
+a=msid-semantic: WMS myStream
+c=IN IP4 203.0.113.1
+m=audio 49170 RTP/AVP 0 96
+c=IN IP4 203.0.113.2
+a=rtpmap:0 PCMU/8000
+a=rtpmap:96 opus/48000/2
+a=fmtp:96 minptime=10;useinbandfec=1
+a=sendrecv
+a=mid:audio
+a=ssrc:1001 cname:audioCname
+m=video 51372 RTP/AVP 97 98
+c=IN IP4 203.0.113.3
+a=rtpmap:97 H264/90000
+a=rtpmap:98 VP8/90000
+a=fmtp:97 profile-level-id=42e01f;packetization-mode=1
+a=sendrecv
+a=mid:video
+a=ssrc:1002 cname:videoCname
+m=application 50000 DTLS/SCTP 5000
+c=IN IP4 203.0.113.4
+a=mid:data
+a=sctpmap:5000 webrtc-datachannel 1024
+`)
+		if err != nil {
+			t.Fatalf("failed to parse SDP: %v", err)
+		}
+
+		ses1.DisableFlowsExcept(sdp.Text)
+
+		if !ses1.AreAllFlowsDroppedOrDisabled() {
+			t.Errorf("expected all flows to be dropped or disabled, but they are not")
+		}
+
 		ses2, err := sdp.ParseString(`v=0
 o=- 206 1 IN IP4 192.168.1.101
 s=session
@@ -892,6 +989,73 @@ a=ssrc:7345055
 			_ = ses2.Bytes()
 		}
 	})
+}
+
+func BenchmarkOrderSDP(b *testing.B) {
+
+	b.Run("My Func", func(b *testing.B) {
+		ses, _ := sdp.ParseString(`v=0
+o=- 206 1 IN IP4 192.168.1.101
+s=session
+c=IN IP4 192.168.1.5
+b=CT:1000
+t=0 0
+m=audio 51624 RTP/AVP 97 101 13 0 8
+c=IN IP4 0.0.0.0
+a=rtcp:51625
+a=label:Audio
+a=sendrecv
+a=rtpmap:97 RED/8000
+a=rtpmap:101 telephone-event/8000
+a=fmtp:101 0-16
+a=rtpmap:13 CN/8000
+a=rtpmap:0 PCMU/8000
+a=rtpmap:8 PCMA/8000
+a=ptime:20
+`)
+		flow := ses.GetMediaFlow(sdp.Audio)
+		formats := make([]*sdp.Format, len(flow.Format))
+		copy(formats, flow.Format)
+
+		for b.Loop() {
+			flow := ses.GetMediaFlow(sdp.Audio)
+			flow.Format = make([]*sdp.Format, len(flow.Format))
+			copy(flow.Format, formats)
+			flow.OrderFormatsByName("RED", "PCMU", "telephone-event", "CN", "PCMA")
+		}
+	})
+
+	// 	b.Run("DS Func", func(b *testing.B) {
+	// 		ses, _ := sdp.ParseString(`v=0
+	// o=- 206 1 IN IP4 192.168.1.101
+	// s=session
+	// c=IN IP4 192.168.1.5
+	// b=CT:1000
+	// t=0 0
+	// m=audio 51624 RTP/AVP 97 101 13 0 8
+	// c=IN IP4 0.0.0.0
+	// a=rtcp:51625
+	// a=label:Audio
+	// a=sendrecv
+	// a=rtpmap:97 RED/8000
+	// a=rtpmap:101 telephone-event/8000
+	// a=fmtp:101 0-16
+	// a=rtpmap:13 CN/8000
+	// a=rtpmap:0 PCMU/8000
+	// a=rtpmap:8 PCMA/8000
+	// a=ptime:20
+	// `)
+	// 		flow := ses.GetMediaFlow(sdp.Audio)
+	// 		formats := make([]*sdp.Format, len(flow.Format))
+	// 		copy(formats, flow.Format)
+
+	// 		for b.Loop() {
+	// 			flow := ses.GetMediaFlow(sdp.Audio)
+	// 			flow.Format = make([]*sdp.Format, len(flow.Format))
+	// 			copy(flow.Format, formats)
+	// 			flow.OrderFormatsByNameDS("RED", "PCMU", "telephone-event", "CN", "PCMA")
+	// 		}
+	// 	})
 }
 
 func bytesToHexString(data []byte) string {
