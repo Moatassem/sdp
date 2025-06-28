@@ -74,7 +74,7 @@ func (ses *Session) Bytes() []byte {
 func NewSessionSDP(sesID, sesVer int64, ipv4, nm, ssrc, mdir string, port int, codecs []uint8) *Session {
 	formats := make([]*Format, 0, len(codecs))
 	for _, codec := range codecs {
-		formats = append(formats, getFormat(uint8(codec)))
+		formats = append(formats, getFormat(codec))
 	}
 
 	return &Session{
@@ -317,8 +317,7 @@ func (ses *Session) AreAllFlowsDroppedOrDisabled() bool {
 }
 
 func (ses *Session) IsT38Image() bool {
-	for i := range ses.Media {
-		media := ses.Media[i]
+	for _, media := range ses.Media {
 		if media.Type == Image && media.Port > 0 && media.Proto == Udptl && media.FormatDescr == "t38" {
 			return true
 		}
