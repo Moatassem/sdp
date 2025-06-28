@@ -95,7 +95,6 @@ func NewSessionSDP(sesID, sesVer int64, ipv4, nm, ssrc, mdir string, port int, c
 		},
 		Media: []*Media{
 			{
-				Chosen:     true,
 				Type:       Audio,
 				Port:       port,
 				Proto:      RtpAvp,
@@ -121,18 +120,12 @@ func getFormat(codec uint8) *Format {
 	return frmt
 }
 
-// Get Chosen Media Description
-func (ses *Session) GetChosenMedia() *Media {
-	for _, m := range ses.Media {
-		if m.Chosen {
-			return m
-		}
-	}
-	return nil
+func (ses *Session) GetAudioMediaFlow() *Media {
+	return ses.GetMediaFlow(Audio)
 }
 
 func (ses *Session) GetEffectivePTime() string {
-	media := ses.GetChosenMedia()
+	media := ses.GetAudioMediaFlow()
 	attrbnm := "ptime"
 	ptime := media.Attributes.Get(attrbnm)
 	if ptime != "" {
@@ -334,7 +327,7 @@ func (ses *Session) IsT38Image() bool {
 }
 
 func (ses *Session) GetEffectiveMediaDirective() string {
-	media := ses.GetChosenMedia()
+	media := ses.GetAudioMediaFlow()
 	if media.Mode != "" {
 		return media.Mode
 	}
@@ -344,8 +337,12 @@ func (ses *Session) GetEffectiveMediaDirective() string {
 	return SendRecv
 }
 
+func (ses *Session) IsCallHolding() bool {
+	return IsMedDirHolding(ses.GetEffectiveMediaDirective())
+}
+
 func (ses *Session) IsCallHeld() bool {
-	media := ses.GetChosenMedia()
+	media := ses.GetAudioMediaFlow()
 	var mode string
 	if media.Mode != "" {
 		mode = media.Mode
@@ -424,7 +421,6 @@ type Repeat struct {
 
 // Media contains media description.
 type Media struct {
-	Chosen      bool
 	Type        string
 	Port        int
 	PortNum     int
@@ -582,7 +578,6 @@ loop:
 
 func (m *Media) Clone(prt int) *Media {
 	mediaclone := new(Media)
-	mediaclone.Chosen = m.Chosen
 	mediaclone.Type = m.Type
 	mediaclone.Port = prt
 	mediaclone.PortNum = m.PortNum

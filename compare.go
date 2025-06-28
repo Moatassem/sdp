@@ -61,7 +61,7 @@ func (m *Media) Equals(other *Media) bool {
 	if other == nil {
 		return false
 	}
-	if m.Chosen != other.Chosen || m.Type != other.Type || m.Port != other.Port ||
+	if m.Type != other.Type || m.Port != other.Port ||
 		m.PortNum != other.PortNum || m.Proto != other.Proto || m.Information != other.Information ||
 		m.Mode != other.Mode || m.FormatDescr != other.FormatDescr {
 		return false
