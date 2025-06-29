@@ -59,6 +59,134 @@ type Session struct {
 	Media       []*Media     // Media Descriptions ("m=")
 }
 
+func (s *Session) Clone() *Session {
+	if s == nil {
+		return nil
+	}
+
+	clone := &Session{
+		Version:     s.Version,
+		Name:        s.Name,
+		Information: s.Information,
+		URI:         s.URI,
+		Mode:        s.Mode,
+	}
+
+	// Clone Origin
+	if s.Origin != nil {
+		clone.Origin = &Origin{
+			Username:       s.Origin.Username,
+			SessionID:      s.Origin.SessionID,
+			SessionVersion: s.Origin.SessionVersion,
+			Network:        s.Origin.Network,
+			Type:           s.Origin.Type,
+			Address:        s.Origin.Address,
+		}
+	}
+
+	// Clone Email slice
+	if s.Email != nil {
+		clone.Email = make([]string, len(s.Email))
+		copy(clone.Email, s.Email)
+	}
+
+	// Clone Phone slice
+	if s.Phone != nil {
+		clone.Phone = make([]string, len(s.Phone))
+		copy(clone.Phone, s.Phone)
+	}
+
+	// Clone Connection
+	if s.Connection != nil {
+		clone.Connection = &Connection{
+			Network:    s.Connection.Network,
+			Type:       s.Connection.Type,
+			Address:    s.Connection.Address,
+			TTL:        s.Connection.TTL,
+			AddressNum: s.Connection.AddressNum,
+		}
+	}
+
+	// Clone Bandwidth slice
+	if s.Bandwidth != nil {
+		clone.Bandwidth = make([]*Bandwidth, len(s.Bandwidth))
+		for i, bw := range s.Bandwidth {
+			if bw != nil {
+				clone.Bandwidth[i] = &Bandwidth{
+					Type:  bw.Type,
+					Value: bw.Value,
+				}
+			}
+		}
+	}
+
+	// Clone TimeZone slice
+	if s.TimeZone != nil {
+		clone.TimeZone = make([]*TimeZone, len(s.TimeZone))
+		for i, tz := range s.TimeZone {
+			if tz != nil {
+				clone.TimeZone[i] = &TimeZone{
+					Time:   tz.Time,
+					Offset: tz.Offset,
+				}
+			}
+		}
+	}
+
+	// Clone Key slice
+	if s.Key != nil {
+		clone.Key = make([]*Key, len(s.Key))
+		for i, k := range s.Key {
+			if k != nil {
+				clone.Key[i] = &Key{
+					Method: k.Method,
+					Value:  k.Value,
+				}
+			}
+		}
+	}
+
+	// Clone Timing
+	if s.Timing != nil {
+		clone.Timing = &Timing{
+			Start: s.Timing.Start,
+			Stop:  s.Timing.Stop,
+		}
+	}
+
+	// Clone Repeat slice
+	if s.Repeat != nil {
+		clone.Repeat = make([]*Repeat, len(s.Repeat))
+		for i, r := range s.Repeat {
+			if r != nil {
+				offsets := make([]time.Duration, len(r.Offsets))
+				copy(offsets, r.Offsets)
+				clone.Repeat[i] = &Repeat{
+					Interval: r.Interval,
+					Duration: r.Duration,
+					Offsets:  offsets,
+				}
+			}
+		}
+	}
+
+	// Clone Attributes
+	clone.Attributes = s.Attributes.clone()
+
+	// Clone Media slice
+	if s.Media != nil {
+		clone.Media = make([]*Media, len(s.Media))
+		for i, m := range s.Media {
+			if m == nil {
+				continue
+			}
+			clone.Media[i] = m.clone(-1)
+		}
+	}
+
+	return clone
+}
+
 // String returns the encoded session description as string.
 func (ses *Session) String() string {
 	return string(ses.Bytes())
@@ -71,10 +199,14 @@ func (ses *Session) Bytes() []byte {
 	return e.Bytes()
 }
 
-func NewSessionSDP(sesID, sesVer int64, ipv4, nm, ssrc, mdir string, port int, codecs []uint8) *Session {
+func NewSessionSDP(sesID, sesVer int64, ipv4, nm, ssrc, mdir string, port int, codecs []uint8) (*Session, error) {
 	formats := make([]*Format, 0, len(codecs))
 	for _, codec := range codecs {
-		formats = append(formats, getFormat(codec))
+		frmt, err := buildFormat(codec)
+		if err != nil {
+			return nil, err
+		}
+		formats = append(formats, frmt)
 	}
 
 	return &Session{
@@ -95,29 +227,37 @@ func NewSessionSDP(sesID, sesVer int64, ipv4, nm, ssrc, mdir string, port int, c
 		},
 		Media: []*Media{
 			{
-				Type:       Audio,
-				Port:       port,
-				Proto:      RtpAvp,
-				Attributes: Attributes{{Name: "ssrc", Value: ssrc}},
-				Mode:       mdir,
-				Format:     formats,
+				Type:  Audio,
+				Port:  port,
+				Proto: RtpAvp,
+				Attributes: func() Attributes {
+					if ssrc != "" {
+						return Attributes{{Name: "ssrc", Value: ssrc}}
+					}
+					return nil
+				}(),
+				Mode:    mdir,
+				Formats: formats,
 			},
 		},
-	}
-
+	}, nil
 }
 
-func getFormat(codec uint8) *Format {
+func buildFormat(codec uint8) (*Format, error) {
+	name, ok := mapCodecs[codec]
+	if !ok {
+		return nil, fmt.Errorf("unknown codec with payload %d", codec)
+	}
 	frmt := &Format{
 		Payload:   codec,
-		Name:      mapCodecs[codec],
+		Name:      name,
 		ClockRate: 8000,
 		Channels:  1,
 	}
 	if codec == RFC4733PT {
 		frmt.Params = append(frmt.Params, "0-16")
 	}
-	return frmt
+	return frmt, nil
 }
 
 func (ses *Session) GetAudioMediaFlow() *Media {
@@ -209,7 +349,7 @@ func (ses *Session) AlignMediaFlows(offer *Session) error {
 		if flow, ok := srcMediaMap[media.Type]; ok {
 			ses.Media = append(ses.Media, flow)
 		} else {
-			ses.Media = append(ses.Media, media.Clone(0))
+			ses.Media = append(ses.Media, media.clone(0))
 		}
 	}
 	return nil
@@ -430,7 +570,7 @@ type Media struct {
 	Key         []*Key        // Encryption Keys ("k=")
 	Attributes                // Attributes ("a=")
 	Mode        string        // Streaming mode ("sendrecv", "recvonly", "sendonly", or "inactive")
-	Format      []*Format     // Media Format for RTP/AVP or RTP/SAVP protocols ("rtpmap", "fmtp", "rtcp-fb")
+	Formats     []*Format     // Media Format for RTP/AVP or RTP/SAVP protocols ("rtpmap", "fmtp", "rtcp-fb")
 	FormatDescr string        // Media Format for other protocols
 }
 
@@ -575,33 +715,85 @@ loop:
 	return attrs[:n]
 }
 
-func (m *Media) Clone(prt int) *Media {
-	mediaclone := new(Media)
-	mediaclone.Type = m.Type
-	mediaclone.Port = prt
-	mediaclone.PortNum = m.PortNum
-	mediaclone.Proto = m.Proto
-	mediaclone.Information = m.Information
-	mediaclone.Connection = nil
-	mediaclone.Bandwidth = nil
-	mediaclone.Key = nil
+func (m *Media) clone(prt int) *Media {
+	newPort, newMode := func() (int, string) {
+		if prt == 0 {
+			return 0, ""
+		}
+		return m.Port, m.Mode
+	}()
 
-	mediaclone.Attributes = make(Attributes, len(m.Attributes))
-	copy(mediaclone.Attributes, m.Attributes)
+	mediaClone := &Media{
+		Type:        m.Type,
+		Port:        newPort,
+		PortNum:     m.PortNum,
+		Proto:       m.Proto,
+		Information: m.Information,
+		Mode:        newMode,
+		FormatDescr: m.FormatDescr,
+	}
 
-	mediaclone.Mode = ""
+	// Clone Connection slice for Media
+	if m.Connection != nil {
+		mediaClone.Connection = make([]*Connection, len(m.Connection))
+		for j, conn := range m.Connection {
+			if conn != nil {
+				mediaClone.Connection[j] = &Connection{
+					Network:    conn.Network,
+					Type:       conn.Type,
+					Address:    conn.Address,
+					TTL:        conn.TTL,
+					AddressNum: conn.AddressNum,
+				}
+			}
+		}
+	}
 
-	mediaclone.Format = make([]*Format, len(m.Format))
-	copy(mediaclone.Format, m.Format)
+	// Clone Bandwidth slice for Media
+	if m.Bandwidth != nil {
+		mediaClone.Bandwidth = make([]*Bandwidth, len(m.Bandwidth))
+		for j, bw := range m.Bandwidth {
+			if bw != nil {
+				mediaClone.Bandwidth[j] = &Bandwidth{
+					Type:  bw.Type,
+					Value: bw.Value,
+				}
+			}
+		}
+	}
 
-	mediaclone.FormatDescr = m.FormatDescr
+	// Clone Key slice for Media
+	if m.Key != nil {
+		mediaClone.Key = make([]*Key, len(m.Key))
+		for j, k := range m.Key {
+			if k != nil {
+				mediaClone.Key[j] = &Key{
+					Method: k.Method,
+					Value:  k.Value,
+				}
+			}
+		}
+	}
 
-	return mediaclone
+	// Clone Attributes for Media
+	mediaClone.Attributes = m.Attributes.clone()
+
+	// Clone Format slice for Media
+	if m.Formats != nil {
+		mediaClone.Formats = make([]*Format, len(m.Formats))
+		for j, f := range m.Formats {
+			if f != nil {
+				mediaClone.Formats[j] = f.clone()
+			}
+		}
+	}
+
+	return mediaClone
 }
 
 // FormatByPayload returns format description by payload type.
 func (m *Media) FormatByPayload(payload uint8) *Format {
-	for _, f := range m.Format {
+	for _, f := range m.Formats {
 		if f.Payload == payload {
 			return f
 		}
@@ -610,7 +802,7 @@ func (m *Media) FormatByPayload(payload uint8) *Format {
 }
 
 func (m *Media) FormatByName(frmt string) *Format {
-	for _, f := range m.Format {
+	for _, f := range m.Formats {
 		if strings.EqualFold(f.Name, frmt) {
 			return f
 		}
@@ -628,26 +820,26 @@ func (m *Media) OrderFormatsByName(filterformats ...string) {
 		filterformatsmap[strings.ToLower(fnm)] = struct{}{}
 	}
 
-	formatsmap := make(map[string]*Format, len(m.Format))
-	formats := make([]string, len(m.Format))
-	for i, f := range m.Format {
+	formatsmap := make(map[string]*Format, len(m.Formats))
+	formats := make([]string, len(m.Formats))
+	for i, f := range m.Formats {
 		formatsmap[f.Name] = f
 		formats[i] = f.Name
 	}
 
-	m.Format = make([]*Format, 0, len(m.Format))
+	m.Formats = make([]*Format, 0, len(m.Formats))
 	for _, ff := range filterformats {
 		if ff == "*" {
 			for _, f := range formats {
 				flower := strings.ToLower(f)
 				if _, ok := filterformatsmap[flower]; !ok {
-					m.Format = append(m.Format, formatsmap[f])
+					m.Formats = append(m.Formats, formatsmap[f])
 				}
 			}
 			continue
 		}
 		if f, ok := formatsmap[ff]; ok {
-			m.Format = append(m.Format, f)
+			m.Formats = append(m.Formats, f)
 		}
 	}
 }
@@ -697,9 +889,9 @@ func (m *Media) findFormatByPayload(drop bool, frmts ...uint8) {
 }
 
 func (m *Media) filterFormats(drop bool, matchFunc func(f *Format) bool) {
-	for i := 0; i < len(m.Format); {
-		if matchFunc(m.Format[i]) == drop {
-			m.Format = append(m.Format[:i], m.Format[i+1:]...)
+	for i := 0; i < len(m.Formats); {
+		if matchFunc(m.Formats[i]) == drop {
+			m.Formats = append(m.Formats[:i], m.Formats[i+1:]...)
 		} else {
 			i++
 		}
@@ -718,6 +910,22 @@ type Format struct {
 
 func (f *Format) String() string {
 	return f.Name
+}
+
+func (f *Format) clone() *Format {
+	clone := &Format{
+		Payload:   f.Payload,
+		Name:      f.Name,
+		ClockRate: f.ClockRate,
+		Channels:  f.Channels,
+		Feedback:  make([]string, len(f.Feedback)),
+		Params:    make([]string, len(f.Params)),
+	}
+
+	copy(clone.Feedback, f.Feedback)
+	copy(clone.Params, f.Params)
+
+	return clone
 }
 
 func isRTP(media, proto string) bool {

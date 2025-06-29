@@ -147,7 +147,7 @@ func (w writer) media(m *Media) writer {
 	if f := m.FormatDescr; f != "" {
 		w = w.sp().str(f)
 	} else {
-		for _, it := range m.Format {
+		for _, it := range m.Formats {
 			w = w.sp().int(int64(it.Payload))
 		}
 	}
@@ -163,7 +163,7 @@ func (w writer) media(m *Media) writer {
 	for _, it := range m.Key {
 		w = w.add('k').key(it)
 	}
-	for _, it := range m.Format {
+	for _, it := range m.Formats {
 		w = w.format(it)
 	}
 	if m.Mode != "" {

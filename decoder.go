@@ -180,7 +180,7 @@ func (d *Decoder) format(m *Media, a *Attr) error {
 		format []*Format
 	)
 	if pt == "*" {
-		format = m.Format
+		format = m.Formats
 	} else {
 		pt, err := strconv.Atoi(pt)
 		if err != nil {
@@ -189,7 +189,7 @@ func (d *Decoder) format(m *Media, a *Attr) error {
 		f := m.FormatByPayload(uint8(pt))
 		if f == nil {
 			f = &Format{Payload: uint8(pt)}
-			m.Format = append(m.Format, f)
+			m.Formats = append(m.Formats, f)
 		}
 		format = append(format, f)
 	}
@@ -255,7 +255,7 @@ func (d *Decoder) proto(m *Media, v string) error {
 		if err != nil {
 			return err
 		}
-		m.Format = append(m.Format, &Format{Payload: uint8(pt)})
+		m.Formats = append(m.Formats, &Format{Payload: uint8(pt)})
 	}
 	return nil
 }

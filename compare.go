@@ -78,11 +78,11 @@ func (m *Media) Equals(other *Media) bool {
 	if !compareAttributes(m.Attributes, other.Attributes) {
 		return false
 	}
-	if len(m.Format) != len(other.Format) {
+	if len(m.Formats) != len(other.Formats) {
 		return false
 	}
-	for i := range m.Format {
-		if !compareFormats(m.Format[i], other.Format[i]) {
+	for i := range m.Formats {
+		if !compareFormats(m.Formats[i], other.Formats[i]) {
 			return false
 		}
 	}

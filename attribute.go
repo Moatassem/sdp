@@ -13,6 +13,17 @@ func (a Attributes) Has(name string) bool {
 	return false
 }
 
+func (a Attributes) clone() Attributes {
+	clone := make(Attributes, len(a))
+	for i, attr := range a {
+		clone[i] = &Attr{
+			Name:  attr.Name,
+			Value: attr.Value,
+		}
+	}
+	return clone
+}
+
 // Get returns first attribute value by name.
 func (a Attributes) Get(name string) string {
 	for _, it := range a {
