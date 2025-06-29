@@ -801,6 +801,7 @@ func (m *Media) FormatByPayload(payload uint8) *Format {
 	return nil
 }
 
+// FormatByName returns format by codec name - way faster (10x) than using ToLower() on each format name and input format name.
 func (m *Media) FormatByName(frmt string) *Format {
 	for _, f := range m.Formats {
 		if strings.EqualFold(f.Name, frmt) {

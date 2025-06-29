@@ -1009,6 +1009,40 @@ a=ssrc:7345055
 	})
 }
 
+func BenchmarkFormatByName(b *testing.B) {
+	sdpstring := `v=0
+o=- 2508 1 IN IP4 192.168.1.2
+s=sipclientgo/1.0
+c=IN IP4 192.168.1.2
+t=0 0
+m=audio 51191 RTP/AVP 9 8 0 101
+a=rtpmap:9 G722/8000
+a=rtpmap:8 PCMA/8000
+a=rtpmap:0 PCMU/8000
+a=rtpmap:101 telephone-event/8000
+a=fmtp:101 0-16
+a=sendonly
+a=ssrc:7345055
+`
+
+	ses, _ := sdp.ParseString(sdpstring)
+	mf := ses.GetMediaFlow(sdp.Audio)
+
+	b.Run("FormatByToLower", func(b *testing.B) {
+		b.ReportAllocs()
+		for b.Loop() {
+			_ = mf.FormatByName("PCMA")
+		}
+	})
+
+	// b.Run("FormatByEqualFold", func(b *testing.B) {
+	// 	b.ReportAllocs()
+	// 	for b.Loop() {
+	// 		_ = mf.FormatByName2("PCMA")
+	// 	}
+	// })
+}
+
 func BenchmarkSDPParseVsClone(b *testing.B) {
 	sdpString := `v=0
 o=- 3849203748 3849203748 IN IP4 192.0.2.1
