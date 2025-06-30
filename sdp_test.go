@@ -720,7 +720,7 @@ a=sctpmap:5000 webrtc-datachannel 1024
 		}
 
 		mf := ses.GetMediaFlow(sdp.Audio)
-		mf.OrderFormatsByName("opus", "PCMU", "telephone-event")
+		mf.OrderFormatsByName("opus", "pCMu", "telephone-event")
 
 		if len(mf.Formats) != 3 {
 			t.Errorf("expected 3 formats, got %d", len(mf.Formats))

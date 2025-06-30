@@ -816,24 +816,28 @@ func (m *Media) OrderFormatsByName(filterformats ...string) {
 		return
 	}
 
+	for i, ff := range filterformats {
+		filterformats[i] = strings.ToLower(ff)
+	}
+
 	filterformatsmap := make(map[string]struct{}, len(filterformats))
-	for _, fnm := range filterformats {
-		filterformatsmap[strings.ToLower(fnm)] = struct{}{}
+	for _, ff := range filterformats {
+		filterformatsmap[ff] = struct{}{}
 	}
 
 	formatsmap := make(map[string]*Format, len(m.Formats))
 	formats := make([]string, len(m.Formats))
-	for i, f := range m.Formats {
-		formatsmap[f.Name] = f
-		formats[i] = f.Name
+	for i, frmt := range m.Formats {
+		ff := strings.ToLower(frmt.Name)
+		formatsmap[ff] = frmt
+		formats[i] = ff
 	}
 
 	m.Formats = make([]*Format, 0, len(m.Formats))
 	for _, ff := range filterformats {
 		if ff == "*" {
 			for _, f := range formats {
-				flower := strings.ToLower(f)
-				if _, ok := filterformatsmap[flower]; !ok {
+				if _, ok := filterformatsmap[f]; !ok {
 					m.Formats = append(m.Formats, formatsmap[f])
 				}
 			}
@@ -843,6 +847,15 @@ func (m *Media) OrderFormatsByName(filterformats ...string) {
 			m.Formats = append(m.Formats, f)
 		}
 	}
+}
+
+func (m *Media) FormatNames() []string {
+	names := make([]string, len(m.Formats))
+	for i, f := range m.Formats {
+		names[i] = f.Name
+	}
+
+	return names
 }
 
 func (m *Media) FilterFormatsByName(frmts ...string) {
