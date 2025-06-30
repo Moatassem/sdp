@@ -879,11 +879,13 @@ func (m *Media) findFormatByName(drop bool, frmts ...string) {
 		return
 	}
 	formatNames := make(map[string]struct{}, len(frmts))
-	for _, v := range frmts {
-		formatNames[v] = struct{}{}
+	for _, f := range frmts {
+		ff := strings.ToLower(f)
+		formatNames[ff] = struct{}{}
 	}
 	m.filterFormats(drop, func(f *Format) bool {
-		_, ok := formatNames[f.Name]
+		ff := strings.ToLower(f.Name)
+		_, ok := formatNames[ff]
 		return ok
 	})
 }

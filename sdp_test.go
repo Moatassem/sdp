@@ -98,8 +98,8 @@ a=ssrc:7345055
 
 		t.Run("Drop G722 only", func(t *testing.T) {
 			ses1 := ses.Clone()
-			ses1.GetMediaFlow(sdp.Audio).DropFormatsByName("G722")
-			if ses1.GetMediaFlow(sdp.Audio).FormatByName("G722") != nil {
+			ses1.GetMediaFlow(sdp.Audio).DropFormatsByName("g722")
+			if ses1.GetMediaFlow(sdp.Audio).FormatByName("g722") != nil {
 				t.Errorf("expected G722 format to be dropped, but it still exists")
 			}
 		})
@@ -163,8 +163,8 @@ a=ssrc:7345055
 
 		t.Run("Filter G722 only", func(t *testing.T) {
 			ses1 := ses.Clone()
-			ses1.GetMediaFlow(sdp.Audio).FilterFormatsByName("G722")
-			if ses1.GetMediaFlow(sdp.Audio).FormatByName("G722") == nil || len(ses1.GetMediaFlow(sdp.Audio).Formats) != 1 {
+			ses1.GetMediaFlow(sdp.Audio).FilterFormatsByName("g722")
+			if ses1.GetMediaFlow(sdp.Audio).FormatByName("g722") == nil || len(ses1.GetMediaFlow(sdp.Audio).Formats) != 1 {
 				t.Errorf("expected G722 format to be filtered, but was dropped")
 			}
 		})
