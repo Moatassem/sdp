@@ -390,27 +390,21 @@ func (ses *Session) SetConnection(medType, IPv4 string, Port int, setGlobal bool
 	return ses
 }
 
-func (ses *Session) DropFlowsExcept(medType string) *Session {
-	for i := 0; i < len(ses.Media); {
-		if ses.Media[i].Type != medType {
-			ses.Media = append(ses.Media[:i], ses.Media[i+1:]...)
-		} else {
-			i++
-		}
-	}
-	return ses
+func (ses *Session) DropFlowsExcept(medTypes ...string) *Session {
+	return ses.dropFlows(true, medTypes...)
 }
 
 func (ses *Session) DropFlows(medTypes ...string) *Session {
-	if len(medTypes) == 0 {
+	return ses.dropFlows(false, medTypes...)
+}
+
+func (ses *Session) dropFlows(except bool, medTypes ...string) *Session {
+	medTypesMap, ok := sliceToSet(medTypes...)
+	if !ok {
 		return ses
 	}
-	medTypesMap := make(map[string]struct{}, len(medTypes))
-	for _, mt := range medTypes {
-		medTypesMap[mt] = struct{}{}
-	}
 	for i := 0; i < len(ses.Media); {
-		if _, ok := medTypesMap[ses.Media[i].Type]; ok {
+		if _, ok := medTypesMap[ses.Media[i].Type]; ok != except {
 			ses.Media = append(ses.Media[:i], ses.Media[i+1:]...)
 		} else {
 			i++
@@ -419,29 +413,36 @@ func (ses *Session) DropFlows(medTypes ...string) *Session {
 	return ses
 }
 
-func (ses *Session) DisableFlowsExcept(medType string) *Session {
+func (ses *Session) DisableFlowsExcept(medTypes ...string) *Session {
+	return ses.disableFlows(true, medTypes...)
+}
+
+func (ses *Session) DisableFlows(medTypes ...string) *Session {
+	return ses.disableFlows(false, medTypes...)
+}
+
+func (ses *Session) disableFlows(except bool, medTypes ...string) *Session {
+	medTypesMap, ok := sliceToSet(medTypes...)
+	if !ok {
+		return ses
+	}
 	for _, mf := range ses.Media {
-		if mf.Type != medType {
+		if _, ok := medTypesMap[mf.Type]; ok != except {
 			mf.Port = 0
 		}
 	}
 	return ses
 }
 
-func (ses *Session) DisableFlows(medTypes ...string) *Session {
-	if len(medTypes) == 0 {
-		return ses
+func sliceToSet[T comparable](items ...T) (map[T]struct{}, bool) {
+	if len(items) == 0 {
+		return nil, false
 	}
-	medTypesMap := make(map[string]struct{}, len(medTypes))
-	for _, mt := range medTypes {
-		medTypesMap[mt] = struct{}{}
+	set := make(map[T]struct{}, len(items))
+	for _, item := range items {
+		set[item] = struct{}{}
 	}
-	for _, mf := range ses.Media {
-		if _, ok := medTypesMap[mf.Type]; ok {
-			mf.Port = 0
-		}
-	}
-	return ses
+	return set, true
 }
 
 func (ses *Session) AreAllFlowsDroppedOrDisabled() bool {
