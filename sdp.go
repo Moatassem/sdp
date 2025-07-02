@@ -192,11 +192,31 @@ func (ses *Session) String() string {
 	return string(ses.Bytes())
 }
 
-// Bytes returns the encoded session description as buffer.
+// Bytes returns the encoded session description as bytes.
 func (ses *Session) Bytes() []byte {
 	e := NewEncoder(nil)
 	e.Encode(ses)
 	return e.Bytes()
+}
+
+func (ses *Session) BuildEchoResponderAnswer(frmts ...string) (*Session, error) {
+	if ses.GetAudioMediaFlow() == nil {
+		return nil, fmt.Errorf("Cannot build EchoResponder answer: no audio media flow found")
+	}
+	answer := ses.Clone()
+	answer.Name = "EchoResponder"
+	answer.Mode = ""
+	answer.Origin.SessionVersion = 1
+
+	mf := answer.DisableFlowsExcept(Audio).GetAudioMediaFlow()
+
+	if mf.KeepOnlyFirstAudioCodecAlongRFC4733(); len(mf.Formats) < 1 {
+		return nil, fmt.Errorf("Cannot build EchoResponder answer: no formats remaining in audio media flow")
+	}
+
+	mf.Mode = NegotiateAnswerMode(SendRecv, ses.GetEffectiveMediaDirective())
+
+	return answer, nil
 }
 
 func NewSessionSDP(sesID, sesVer int64, ipv4, nm, ssrc, mdir string, port int, codecs []uint8) (*Session, error) {
@@ -810,6 +830,34 @@ func (m *Media) FormatByName(frmt string) *Format {
 		}
 	}
 	return nil
+}
+
+func (m *Media) KeepOnlyFirstAudioCodecAlongRFC4733() {
+	if len(m.Formats) == 0 || len(m.Formats) == 1 {
+		return
+	}
+	formats := make(map[string]*Format, 2)
+	for _, f := range m.Formats {
+		if len(formats) == 2 {
+			break
+		}
+		if f.Name == RFC4733 {
+			if _, ok := formats[f.Name]; !ok {
+				formats[f.Name] = f
+			}
+			continue
+		}
+		if _, ok := formats["audioCodec"]; !ok {
+			formats["audioCodec"] = f
+		}
+	}
+	m.Formats = make([]*Format, 0, len(formats))
+	if f, ok := formats["audioCodec"]; ok {
+		m.Formats = append(m.Formats, f)
+	}
+	if f, ok := formats[RFC4733]; ok {
+		m.Formats = append(m.Formats, f)
+	}
 }
 
 func (m *Media) OrderFormatsByName(filterformats ...string) {

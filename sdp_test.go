@@ -1128,6 +1128,111 @@ a=sctpmap:5000 webrtc-datachannel 1024
 		}
 	})
 }
+
+func TestBuildEchoResponderAnswer(t *testing.T) {
+
+	t.Run("Generate SDP Answer for SendRecv", func(t *testing.T) {
+		sdpString := `v=0
+o=- 3849203748 3849203748 IN IP4 192.0.2.1
+s=Multimedia Session Example
+c=IN IP4 203.0.113.1
+t=0 0
+a=group:BUNDLE audio video data
+a=msid-semantic: WMS myStream
+m=audio 51191 RTP/AVP 9 8 0 96 101
+a=rtpmap:9 G722/8000/3
+a=rtpmap:8 PCMA/8000/2
+a=rtpmap:0 PCMU/8000/1
+a=rtpmap:96 opus/48000/2
+a=fmtp:96 minptime=10;useinbandfec=1
+a=rtpmap:101 telephone-event/8000
+a=fmtp:101 0-16
+a=sendrecv
+a=mid:audio
+a=ssrc:1001 cname:audioCname
+m=video 51372 RTP/AVP 97 98
+c=IN IP4 203.0.113.3
+a=rtpmap:97 H264/90000
+a=fmtp:97 profile-level-id=42e01f;packetization-mode=1
+a=rtpmap:98 VP8/90000
+a=sendrecv
+a=mid:video
+a=ssrc:1002 cname:videoCname
+m=application 50000 DTLS/SCTP 5000
+c=IN IP4 203.0.113.4
+a=mid:data
+a=sctpmap:5000 webrtc-datachannel 1024
+`
+		ses, err := sdp.ParseString(sdpString)
+		if err != nil {
+			t.Fatalf("failed to parse SDP: %v", err)
+		}
+
+		if answer, err := ses.BuildEchoResponderAnswer(); err != nil {
+			t.Errorf("expected error to be nil, got %s", err)
+		} else {
+			mf := answer.GetAudioMediaFlow()
+			if len(mf.Formats) != 2 {
+				t.Errorf("expected 2 audio formats, got %d", len(mf.Formats))
+			}
+			if mf.Mode != sdp.SendRecv {
+				t.Errorf("expected audio mode to be sendrecv, got %s", mf.Mode)
+			}
+		}
+	})
+
+	t.Run("Generate SDP Answer for SendOnly", func(t *testing.T) {
+		sdpString := `v=0
+o=- 3849203748 3849203748 IN IP4 192.0.2.1
+s=Multimedia Session Example
+c=IN IP4 203.0.113.1
+t=0 0
+a=group:BUNDLE audio video data
+a=msid-semantic: WMS myStream
+m=audio 51191 RTP/AVP 9 8 0 96 101
+a=rtpmap:9 G722/8000/3
+a=rtpmap:8 PCMA/8000/2
+a=rtpmap:0 PCMU/8000/1
+a=rtpmap:96 opus/48000/2
+a=fmtp:96 minptime=10;useinbandfec=1
+a=rtpmap:101 telephone-event/8000
+a=fmtp:101 0-16
+a=sendonly
+a=mid:audio
+a=ssrc:1001 cname:audioCname
+m=video 51372 RTP/AVP 97 98
+c=IN IP4 203.0.113.3
+a=rtpmap:97 H264/90000
+a=fmtp:97 profile-level-id=42e01f;packetization-mode=1
+a=rtpmap:98 VP8/90000
+a=sendrecv
+a=mid:video
+a=ssrc:1002 cname:videoCname
+m=application 50000 DTLS/SCTP 5000
+c=IN IP4 203.0.113.4
+a=mid:data
+a=sctpmap:5000 webrtc-datachannel 1024
+`
+		ses, err := sdp.ParseString(sdpString)
+		if err != nil {
+			t.Fatalf("failed to parse SDP: %v", err)
+		}
+
+		if answer, err := ses.BuildEchoResponderAnswer(); err != nil {
+			t.Errorf("expected error to be nil, got %s", err)
+		} else {
+			mf := answer.GetAudioMediaFlow()
+			if len(mf.Formats) != 2 {
+				t.Errorf("expected 2 audio formats, got %d", len(mf.Formats))
+			}
+			if mf.Mode != sdp.RecvOnly {
+				t.Errorf("expected audio mode to be sendrecv, got %s", mf.Mode)
+			}
+		}
+	})
+
+}
+
 func BenchmarkEqualSDP(b *testing.B) {
 	sdp1 := `v=0
 o=- 3849203748 3849203748 IN IP4 192.0.2.1
