@@ -4,11 +4,14 @@ import (
 	"cmp"
 	"fmt"
 	"net"
+	"slices"
 	"strings"
 	"time"
 )
 
 var epoch = time.Date(1900, time.January, 1, 0, 0, 0, 0, time.UTC)
+
+const DeltaRune rune = 'a' - 'A'
 
 func init() {
 	mapCodecs = map[uint8]string{
@@ -199,9 +202,17 @@ func (ses *Session) Bytes() []byte {
 	return e.Bytes()
 }
 
-func (ses *Session) BuildEchoResponderAnswer(frmts ...string) (*Session, error) {
-	if ses.GetAudioMediaFlow() == nil {
-		return nil, fmt.Errorf("Cannot build EchoResponder answer: no audio media flow found")
+func (ses *Session) BuildEchoResponderAnswer(audiofrmts ...string) (*Session, bool, error) {
+	if len(audiofrmts) == 0 {
+		return nil, false, fmt.Errorf("Cannot build EchoResponder answer: no audio formats provided")
+	}
+
+	if mf := ses.GetAudioMediaFlow(); mf == nil {
+		return nil, false, fmt.Errorf("Cannot build EchoResponder answer: no audio media flow found")
+	} else {
+		if mf.Port == 0 {
+			return nil, false, fmt.Errorf("Cannot build EchoResponder answer: audio media flow is disabled")
+		}
 	}
 	answer := ses.Clone()
 	answer.Name = "EchoResponder"
@@ -210,13 +221,15 @@ func (ses *Session) BuildEchoResponderAnswer(frmts ...string) (*Session, error) 
 
 	mf := answer.DisableFlowsExcept(Audio).GetAudioMediaFlow()
 
-	if mf.KeepOnlyFirstAudioCodecAlongRFC4733(); len(mf.Formats) < 1 {
-		return nil, fmt.Errorf("Cannot build EchoResponder answer: no formats remaining in audio media flow")
+	audiofound, dtmffound := mf.KeepOnlyFirstAudioCodecAlongRFC4733(audiofrmts...)
+
+	if !audiofound {
+		return nil, false, fmt.Errorf("Cannot build EchoResponder answer: no common audio formats found in audio media flow")
 	}
 
 	mf.Mode = NegotiateAnswerMode(SendRecv, ses.GetEffectiveMediaDirective())
 
-	return answer, nil
+	return answer, dtmffound, nil
 }
 
 func NewSessionSDP(sesID, sesVer int64, ipv4, nm, ssrc, mdir string, port int, codecs []uint8) (*Session, error) {
@@ -832,32 +845,47 @@ func (m *Media) FormatByName(frmt string) *Format {
 	return nil
 }
 
-func (m *Media) KeepOnlyFirstAudioCodecAlongRFC4733() {
-	if len(m.Formats) == 0 || len(m.Formats) == 1 {
-		return
+func (m *Media) KeepOnlyFirstAudioCodecAlongRFC4733(audiofrmts ...string) (bool, bool) {
+	if len(m.Formats) == 0 {
+		return false, false
 	}
-	formats := make(map[string]*Format, 2)
+
+	for i, f := range audiofrmts {
+		audiofrmts[i] = asciiToLower(f)
+	}
+
+	var dtmfFormat, audioFormat *Format
+
 	for _, f := range m.Formats {
-		if len(formats) == 2 {
+		if audioFormat != nil && dtmfFormat != nil {
 			break
 		}
 		if f.Name == RFC4733 {
-			if _, ok := formats[f.Name]; !ok {
-				formats[f.Name] = f
+			if dtmfFormat == nil {
+				dtmfFormat = f
 			}
 			continue
 		}
-		if _, ok := formats["audioCodec"]; !ok {
-			formats["audioCodec"] = f
+		if audioFormat == nil {
+			if slices.Contains(audiofrmts, asciiToLower(f.Name)) {
+				audioFormat = f
+			}
 		}
 	}
-	m.Formats = make([]*Format, 0, len(formats))
-	if f, ok := formats["audioCodec"]; ok {
-		m.Formats = append(m.Formats, f)
+	if audioFormat == nil {
+		return false, false
 	}
-	if f, ok := formats[RFC4733]; ok {
-		m.Formats = append(m.Formats, f)
+
+	m.Formats = make([]*Format, 0, 2)
+
+	m.Formats = append(m.Formats, audioFormat)
+
+	if dtmfFormat != nil {
+		m.Formats = append(m.Formats, dtmfFormat)
+		return true, true
 	}
+
+	return true, false
 }
 
 func (m *Media) OrderFormatsByName(filterformats ...string) {
@@ -866,7 +894,7 @@ func (m *Media) OrderFormatsByName(filterformats ...string) {
 	}
 
 	for i, ff := range filterformats {
-		filterformats[i] = strings.ToLower(ff)
+		filterformats[i] = asciiToLower(ff)
 	}
 
 	filterformatsmap := make(map[string]struct{}, len(filterformats))
@@ -877,7 +905,7 @@ func (m *Media) OrderFormatsByName(filterformats ...string) {
 	formatsmap := make(map[string]*Format, len(m.Formats))
 	formats := make([]string, len(m.Formats))
 	for i, frmt := range m.Formats {
-		ff := strings.ToLower(frmt.Name)
+		ff := asciiToLower(frmt.Name)
 		formatsmap[ff] = frmt
 		formats[i] = ff
 	}
@@ -929,11 +957,11 @@ func (m *Media) findFormatByName(drop bool, frmts ...string) {
 	}
 	formatNames := make(map[string]struct{}, len(frmts))
 	for _, f := range frmts {
-		ff := strings.ToLower(f)
+		ff := asciiToLower(f)
 		formatNames[ff] = struct{}{}
 	}
 	m.filterFormats(drop, func(f *Format) bool {
-		ff := strings.ToLower(f.Name)
+		ff := asciiToLower(f.Name)
 		_, ok := formatNames[ff]
 		return ok
 	})
@@ -1000,4 +1028,17 @@ func isRTP(media, proto string) bool {
 	default:
 		return false
 	}
+}
+
+func asciiToLower(s string) string {
+	var b strings.Builder
+	b.Grow(len(s))
+	for i := range len(s) {
+		c := s[i]
+		if 'A' <= c && c <= 'Z' {
+			c += byte(DeltaRune)
+		}
+		b.WriteByte(c)
+	}
+	return b.String()
 }
