@@ -8,9 +8,9 @@ type Codec struct {
 }
 
 var (
-	SupportedCodecs       = []uint8{PCMA, PCMU, G722, G729}
-	SupportedCodecsString = []string{"PCMA", "PCMU", "G722", "G729"}
-	mapCodecs             = map[uint8]string{
+	SupportedCodecsUint8List  = []uint8{PCMA, PCMU, G722, G729}
+	SupportedCodecsStringList = []string{"PCMA", "PCMU", "G722", "G729"}
+	mapCodecs                 = map[uint8]string{
 		PCMU:  "PCMU",
 		GSM:   "GSM",
 		G723:  "G723",
