@@ -8,8 +8,9 @@ type Codec struct {
 }
 
 var (
-	SupportedCodecs = []uint8{PCMA, PCMU, G722, G729}
-	mapCodecs       = map[uint8]string{
+	SupportedCodecs       = []uint8{PCMA, PCMU, G722, G729}
+	SupportedCodecsString = []string{"PCMA", "PCMU", "G722", "G729"}
+	mapCodecs             = map[uint8]string{
 		PCMU:  "PCMU",
 		GSM:   "GSM",
 		G723:  "G723",
@@ -68,3 +69,18 @@ const (
 // 17,DVI4,22050,1
 // 18,G729,8000,1
 )
+
+func GetCodecName(payloadType ...uint8) []string {
+	if len(payloadType) == 0 {
+		return nil
+	}
+	codecs := make([]string, len(payloadType))
+	for i, pt := range payloadType {
+		if name, ok := mapCodecs[pt]; ok {
+			codecs[i] = name
+		} else {
+			codecs[i] = "Unknown"
+		}
+	}
+	return codecs
+}
