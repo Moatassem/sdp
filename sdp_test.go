@@ -3,6 +3,7 @@ package sdp_test
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"strings"
 	"testing"
 
 	"github.com/Moatassem/sdp"
@@ -1451,6 +1452,25 @@ a=ptime:20
 	// 			flow.OrderFormatsByNameDS("RED", "PCMU", "telephone-event", "CN", "PCMA")
 	// 		}
 	// 	})
+
+}
+
+func BenchmarkLoweringString(b *testing.B) {
+	b.Run("My AsciiToLower", func(b *testing.B) {
+		line := `jdsEhdk-FFkEEWXksld`
+
+		for b.Loop() {
+			_ = sdp.AsciiToLower(line)
+		}
+	})
+
+	b.Run("Standard ToLower", func(b *testing.B) {
+		line := `jdsEhdk-FFkEEWXksld`
+
+		for b.Loop() {
+			_ = strings.ToLower(line)
+		}
+	})
 }
 
 func bytesToHexString(data []byte) string {

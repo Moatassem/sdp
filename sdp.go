@@ -851,7 +851,7 @@ func (m *Media) KeepOnlyFirstAudioCodecAlongRFC4733(audiofrmts ...string) (bool,
 	}
 
 	for i, f := range audiofrmts {
-		audiofrmts[i] = asciiToLower(f)
+		audiofrmts[i] = AsciiToLower(f)
 	}
 
 	var dtmfFormat, audioFormat *Format
@@ -867,7 +867,7 @@ func (m *Media) KeepOnlyFirstAudioCodecAlongRFC4733(audiofrmts ...string) (bool,
 			continue
 		}
 		if audioFormat == nil {
-			if slices.Contains(audiofrmts, asciiToLower(f.Name)) {
+			if slices.Contains(audiofrmts, AsciiToLower(f.Name)) {
 				audioFormat = f
 			}
 		}
@@ -894,7 +894,7 @@ func (m *Media) OrderFormatsByName(filterformats ...string) {
 	}
 
 	for i, ff := range filterformats {
-		filterformats[i] = asciiToLower(ff)
+		filterformats[i] = AsciiToLower(ff)
 	}
 
 	filterformatsmap := make(map[string]struct{}, len(filterformats))
@@ -905,7 +905,7 @@ func (m *Media) OrderFormatsByName(filterformats ...string) {
 	formatsmap := make(map[string]*Format, len(m.Formats))
 	formats := make([]string, len(m.Formats))
 	for i, frmt := range m.Formats {
-		ff := asciiToLower(frmt.Name)
+		ff := AsciiToLower(frmt.Name)
 		formatsmap[ff] = frmt
 		formats[i] = ff
 	}
@@ -957,11 +957,11 @@ func (m *Media) findFormatByName(drop bool, frmts ...string) {
 	}
 	formatNames := make(map[string]struct{}, len(frmts))
 	for _, f := range frmts {
-		ff := asciiToLower(f)
+		ff := AsciiToLower(f)
 		formatNames[ff] = struct{}{}
 	}
 	m.filterFormats(drop, func(f *Format) bool {
-		ff := asciiToLower(f.Name)
+		ff := AsciiToLower(f.Name)
 		_, ok := formatNames[ff]
 		return ok
 	})
@@ -1030,7 +1030,7 @@ func isRTP(media, proto string) bool {
 	}
 }
 
-func asciiToLower(s string) string {
+func AsciiToLower(s string) string {
 	var b strings.Builder
 	b.Grow(len(s))
 	for i := range len(s) {
