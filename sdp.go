@@ -312,12 +312,8 @@ func (ses *Session) GetEffectivePTime() string {
 }
 
 func (ses *Session) GetEffectiveMediaIPv4(media *Media) string {
-	var ipv4 string
 	for i := range media.Connection {
-		ipv4 = media.Connection[i].Address
-		if ipv4 != "" && ipv4 != "0.0.0.0" {
-			return ipv4
-		}
+		return media.Connection[i].Address
 	}
 	return ses.Connection.Address
 }
@@ -501,7 +497,7 @@ func (ses *Session) IsT38Image() bool {
 
 func (ses *Session) GetEffectiveMediaDirective() string {
 	media := ses.GetAudioMediaFlow()
-	if media.Mode != "" {
+	if media != nil && media.Mode != "" {
 		return media.Mode
 	}
 	if ses.Mode != "" {
@@ -510,21 +506,17 @@ func (ses *Session) GetEffectiveMediaDirective() string {
 	return SendRecv
 }
 
-func (ses *Session) IsCallHolding() bool {
-	return IsMedDirHolding(ses.GetEffectiveMediaDirective())
-}
-
 func (ses *Session) IsCallHeld() bool {
 	media := ses.GetAudioMediaFlow()
 	var mode string
-	if media.Mode != "" {
+	if media != nil && media.Mode != "" {
 		mode = media.Mode
 	} else if ses.Mode != "" {
 		mode = ses.Mode
 	} else {
 		mode = SendRecv
 	}
-	if mode == SendOnly || mode == Inactive {
+	if IsMedDirHolding(mode) {
 		return true
 	}
 	if ipv4 := ses.GetEffectiveMediaIPv4(media); ipv4 == "" || ipv4 == "0.0.0.0" {
