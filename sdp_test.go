@@ -3,6 +3,7 @@ package sdp_test
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -1387,6 +1388,22 @@ a=sctpmap:5000 webrtc-datachannel 1024
 	})
 }
 
+func TestParseWebRTCSDP(t *testing.T) {
+	sdpString := "v=0\r\no=- 4399166264069674367 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0\r\na=extmap-allow-mixed\r\na=msid-semantic: WMS 6573e9d8-9f2e-4feb-b064-13d4650251cf\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 63 9 0 8 13 110 126\r\nc=IN IP4 0.0.0.0\r\na=rtcp:9 IN IP4 0.0.0.0\r\na=candidate:4061950107 1 udp 2113937151 7b0d7f1b-c5b5-49d1-9ac9-44b835a58971.local 64679 typ host generation 0 network-cost 999\r\na=ice-ufrag:Vznr\r\na=ice-pwd:Tt/AbCdcHggQF8RipEHfZg10\r\na=ice-options:trickle\r\na=fingerprint:sha-256 3E:AD:44:E7:0C:B7:25:DE:4F:7E:21:AF:90:CA:BC:5E:66:AB:61:56:FA:BB:16:95:D4:61:CB:4B:F1:BD:4C:8E\r\na=setup:actpass\r\na=mid:0\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendrecv\r\na=msid:6573e9d8-9f2e-4feb-b064-13d4650251cf 4dcd226c-03f6-442a-a40b-ba207e835a35\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:9 G722/8000\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\na=ssrc:397513585 cname:88eQYfCvDAGnLJ+q\r\na=ssrc:397513585 msid:6573e9d8-9f2e-4feb-b064-13d4650251cf 4dcd226c-03f6-442a-a40b-ba207e835a35\r\n"
+	ses, err := sdp.ParseString(sdpString)
+	if err != nil {
+		t.Fatalf("failed to parse SDP: %v", err)
+	}
+	fmt.Println(ses.String())
+}
+func TestParseVoIPSDP(t *testing.T) {
+	sdpString := "v=0\r\no=- 4399167 2 IN IP4 127.0.0.1\r\ns=-\r\nt=0 0\r\na=group:BUNDLE 0\r\na=extmap-allow-mixed\r\na=msid-semantic: WMS 6573e9d8-9f2e-4feb-b064-13d4650251cf\r\nm=audio 9 UDP/TLS/RTP/SAVPF 111 63 9 0 8 13 110 126\r\nc=IN IP4 0.0.0.0\r\na=rtcp:9 IN IP4 0.0.0.0\r\na=candidate:4061950107 1 udp 2113937151 7b0d7f1b-c5b5-49d1-9ac9-44b835a58971.local 64679 typ host generation 0 network-cost 999\r\na=ice-ufrag:Vznr\r\na=ice-pwd:Tt/AbCdcHggQF8RipEHfZg10\r\na=ice-options:trickle\r\na=fingerprint:sha-256 3E:AD:44:E7:0C:B7:25:DE:4F:7E:21:AF:90:CA:BC:5E:66:AB:61:56:FA:BB:16:95:D4:61:CB:4B:F1:BD:4C:8E\r\na=setup:actpass\r\na=mid:0\r\na=extmap:1 urn:ietf:params:rtp-hdrext:ssrc-audio-level\r\na=extmap:2 http://www.webrtc.org/experiments/rtp-hdrext/abs-send-time\r\na=extmap:3 http://www.ietf.org/id/draft-holmer-rmcat-transport-wide-cc-extensions-01\r\na=extmap:4 urn:ietf:params:rtp-hdrext:sdes:mid\r\na=sendrecv\r\na=msid:6573e9d8-9f2e-4feb-b064-13d4650251cf 4dcd226c-03f6-442a-a40b-ba207e835a35\r\na=rtcp-mux\r\na=rtcp-rsize\r\na=rtpmap:111 opus/48000/2\r\na=rtcp-fb:111 transport-cc\r\na=fmtp:111 minptime=10;useinbandfec=1\r\na=rtpmap:63 red/48000/2\r\na=fmtp:63 111/111\r\na=rtpmap:9 G722/8000\r\na=rtpmap:0 PCMU/8000\r\na=rtpmap:8 PCMA/8000\r\na=rtpmap:13 CN/8000\r\na=rtpmap:110 telephone-event/48000\r\na=rtpmap:126 telephone-event/8000\r\na=ssrc:397513585 cname:88eQYfCvDAGnLJ+q\r\na=ssrc:397513585 msid:6573e9d8-9f2e-4feb-b064-13d4650251cf 4dcd226c-03f6-442a-a40b-ba207e835a35\r\n"
+	ses, err := sdp.ParseString(sdpString)
+	if err != nil {
+		t.Fatalf("failed to parse SDP: %v", err)
+	}
+	fmt.Println(ses.String())
+}
 func BenchmarkOrderSDP(b *testing.B) {
 
 	b.Run("My Func", func(b *testing.B) {
