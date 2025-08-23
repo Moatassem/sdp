@@ -204,14 +204,14 @@ func (ses *Session) Bytes() []byte {
 
 func (ses *Session) BuildEchoResponderAnswer(audiofrmts ...string) (*Session, bool, error) {
 	if len(audiofrmts) == 0 {
-		return nil, false, fmt.Errorf("Cannot build EchoResponder answer: no audio formats provided")
+		return nil, false, fmt.Errorf("cannot build EchoResponder answer: no audio formats provided")
 	}
 
 	if mf := ses.GetAudioMediaFlow(); mf == nil {
-		return nil, false, fmt.Errorf("Cannot build EchoResponder answer: no audio media flow found")
+		return nil, false, fmt.Errorf("cannot build EchoResponder answer: no audio media flow found")
 	} else {
 		if mf.Port == 0 {
-			return nil, false, fmt.Errorf("Cannot build EchoResponder answer: audio media flow is disabled")
+			return nil, false, fmt.Errorf("cannot build EchoResponder answer: audio media flow is disabled")
 		}
 	}
 	answer := ses.Clone()
@@ -224,7 +224,7 @@ func (ses *Session) BuildEchoResponderAnswer(audiofrmts ...string) (*Session, bo
 	audiofound, dtmffound := mf.KeepOnlyFirstAudioCodecAlongRFC4733(audiofrmts...)
 
 	if !audiofound {
-		return nil, false, fmt.Errorf("Cannot build EchoResponder answer: no common audio formats found in audio media flow")
+		return nil, false, fmt.Errorf("cannot build EchoResponder answer: no common audio formats found in audio media flow")
 	}
 
 	mf.Mode = NegotiateAnswerMode(SendRecv, ses.GetEffectiveMediaDirective())
@@ -852,7 +852,7 @@ func (m *Media) KeepOnlyFirstAudioCodecAlongRFC4733(audiofrmts ...string) (bool,
 		if audioFormat != nil && dtmfFormat != nil {
 			break
 		}
-		if f.Name == RFC4733 {
+		if f.Name == GetCodecName(RFC4733PT) {
 			if dtmfFormat == nil {
 				dtmfFormat = f
 			}

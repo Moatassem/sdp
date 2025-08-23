@@ -65,7 +65,7 @@ a=ssrc:7345055
 
 		t.Run("Telephone Event Channels", func(t *testing.T) {
 			ses1 := ses.Clone()
-			telephoneEventChannels := ses1.GetMediaFlow(sdp.Audio).FormatByName(sdp.RFC4733).Channels
+			telephoneEventChannels := ses1.GetMediaFlow(sdp.Audio).FormatByName(sdp.GetCodecName(sdp.RFC4733PT)).Channels
 			if telephoneEventChannels != 1 {
 				t.Errorf("expected Telephone Event channels to be 1, got %d", telephoneEventChannels)
 			}
@@ -184,19 +184,19 @@ a=ssrc:7345055
 
 		t.Run("Filter PCMA & RFC4733", func(t *testing.T) {
 			ses1 := ses.Clone()
-			ses1.GetMediaFlow(sdp.Audio).FilterFormatsByName("PCMA", sdp.RFC4733)
+			ses1.GetMediaFlow(sdp.Audio).FilterFormatsByName("PCMA", sdp.GetCodecName(sdp.RFC4733PT))
 			if ses1.GetMediaFlow(sdp.Audio).FormatByName("PCMA") == nil || len(ses1.GetMediaFlow(sdp.Audio).Formats) != 2 {
 				t.Errorf("expected PCMA & RFC4733 format to be filtered, but was dropped")
 			}
-			if ses1.GetMediaFlow(sdp.Audio).FormatByName(sdp.RFC4733) == nil || len(ses1.GetMediaFlow(sdp.Audio).Formats) != 2 {
+			if ses1.GetMediaFlow(sdp.Audio).FormatByName(sdp.GetCodecName(sdp.RFC4733PT)) == nil || len(ses1.GetMediaFlow(sdp.Audio).Formats) != 2 {
 				t.Errorf("expected RFC4733 format to be filtered, but was dropped")
 			}
 		})
 
 		t.Run("Filter RFC4733 only", func(t *testing.T) {
 			ses1 := ses.Clone()
-			ses1.GetMediaFlow(sdp.Audio).FilterFormatsByName(sdp.RFC4733)
-			if ses1.GetMediaFlow(sdp.Audio).FormatByName(sdp.RFC4733) == nil || len(ses1.GetMediaFlow(sdp.Audio).Formats) != 1 {
+			ses1.GetMediaFlow(sdp.Audio).FilterFormatsByName(sdp.GetCodecName(sdp.RFC4733PT))
+			if ses1.GetMediaFlow(sdp.Audio).FormatByName(sdp.GetCodecName(sdp.RFC4733PT)) == nil || len(ses1.GetMediaFlow(sdp.Audio).Formats) != 1 {
 				t.Errorf("expected RFC4733 format to be filtered, but was dropped")
 			}
 		})
@@ -320,7 +320,7 @@ a=ssrc:7345055
 			if ses1.GetMediaFlow(sdp.Audio).FormatByName("PCMA") == nil || len(ses1.GetMediaFlow(sdp.Audio).Formats) != 2 {
 				t.Errorf("expected PCMA & RFC4733 format to be filtered, but was dropped")
 			}
-			if ses1.GetMediaFlow(sdp.Audio).FormatByName(sdp.RFC4733) == nil || len(ses1.GetMediaFlow(sdp.Audio).Formats) != 2 {
+			if ses1.GetMediaFlow(sdp.Audio).FormatByName(sdp.GetCodecName(sdp.RFC4733PT)) == nil || len(ses1.GetMediaFlow(sdp.Audio).Formats) != 2 {
 				t.Errorf("expected RFC4733 format to be filtered, but was dropped")
 			}
 		})
@@ -328,7 +328,7 @@ a=ssrc:7345055
 		t.Run("Filter RFC4733 only", func(t *testing.T) {
 			ses1 := ses.Clone()
 			ses1.GetMediaFlow(sdp.Audio).FilterFormatsByPayload(sdp.RFC4733PT)
-			if ses1.GetMediaFlow(sdp.Audio).FormatByName(sdp.RFC4733) == nil || len(ses1.GetMediaFlow(sdp.Audio).Formats) != 1 {
+			if ses1.GetMediaFlow(sdp.Audio).FormatByName(sdp.GetCodecName(sdp.RFC4733PT)) == nil || len(ses1.GetMediaFlow(sdp.Audio).Formats) != 1 {
 				t.Errorf("expected RFC4733 format to be filtered, but was dropped")
 			}
 		})
