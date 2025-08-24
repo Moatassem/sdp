@@ -24,7 +24,7 @@ const (
 	// DVI4   = 16
 	// DVI4   = 17
 	G729      uint8 = 18
-	Opus      uint8 = 97
+	Opus      uint8 = 96
 	RFC4733PT uint8 = 101
 
 //	0,PCMU,8000,1
@@ -153,7 +153,8 @@ var (
 	}
 )
 
-func FindPayloadByName(name string) (uint8, string, bool) {
+// get canonical codec name and its type
+func IdentifyPayloadTypeByName(name string) (uint8, string, bool) {
 	if AsciiToLower(name) == RFC4733 {
 		return 101, CodecTypeDTMF, true
 	}
