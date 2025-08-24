@@ -1,6 +1,9 @@
 package sdp
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 const (
 	ContentType = "application/sdp"
@@ -46,16 +49,7 @@ const (
 // 18,G729,8000,1
 )
 
-type CodecType = string
-
-const (
-	CodecTypeAudio CodecType = "audio"
-	CodecTypeVideo CodecType = "video"
-	CodecTypeDTMF  CodecType = "dtmf"
-)
-
 var (
-	SupportedCodecsUint8List  = []uint8{PCMA, PCMU, G722, G729, Opus}
 	SupportedCodecsStringList = []string{"PCMA", "PCMU", "G722", "G729", "opus"}
 )
 
@@ -81,87 +75,262 @@ func GetCodecName(pt uint8) string {
 	return "Unknown"
 }
 
-type CodecInfo struct {
-	Payload      uint8
-	Name         string
-	Channels     int
-	SamplingRate int
-	Type         string // "audio" or "video" or "dtmf"
+var mapCodecs = map[uint8]string{
+	PCMU:      "PCMU",
+	GSM:       "GSM",
+	G723:      "G723",
+	DVI4:      "DVI4",
+	LPC:       "LPC",
+	PCMA:      "PCMA",
+	G722:      "G722",
+	L16:       "L16",
+	QCELP:     "QCELP",
+	CN:        "CN",
+	MPA:       "MPA",
+	G728:      "G728",
+	G729:      "G729",
+	Opus:      "opus",
+	RFC4733PT: "telephone-event",
 }
 
-var (
-	mapCodecs = map[uint8]string{
-		PCMU:      "PCMU",
-		GSM:       "GSM",
-		G723:      "G723",
-		DVI4:      "DVI4",
-		LPC:       "LPC",
-		PCMA:      "PCMA",
-		G722:      "G722",
-		L16:       "L16",
-		QCELP:     "QCELP",
-		CN:        "CN",
-		MPA:       "MPA",
-		G728:      "G728",
-		G729:      "G729",
-		Opus:      "opus",
-		RFC4733PT: "telephone-event",
-	}
+type CodecFamily string
+type MediaUse string
 
-	codecsInfoMap = map[uint8]CodecInfo{
-		// Static audio codecs
-		0:  {0, "PCMU", 1, 8000, "audio"},
-		3:  {3, "GSM", 1, 8000, "audio"},
-		4:  {4, "G723", 1, 8000, "audio"},
-		5:  {5, "DVI4", 1, 8000, "audio"},
-		6:  {6, "DVI4", 1, 16000, "audio"},
-		7:  {7, "LPC", 1, 8000, "audio"},
-		8:  {8, "PCMA", 1, 8000, "audio"},
-		9:  {9, "G722", 1, 8000, "audio"},
-		10: {10, "L16", 2, 44100, "audio"},
-		11: {11, "L16", 1, 44100, "audio"},
-		12: {12, "QCELP", 1, 8000, "audio"},
-		13: {13, "CN", 1, 8000, "audio"},
-		14: {14, "MPA", 2, 90000, "audio"},
-		15: {15, "G728", 1, 8000, "audio"},
-		16: {16, "DVI4", 1, 11025, "audio"},
-		17: {17, "DVI4", 1, 22050, "audio"},
-		18: {18, "G729", 1, 8000, "audio"},
+const (
+	// Codec families
+	FamilyWaveform  CodecFamily = "waveform"  // PCM / ADPCM waveform (PCMU, PCMA, L16, G.722, G.726)
+	FamilyCELP      CodecFamily = "celp"      // G.729, G.723.1, iLBC, AMR, AMR-WB
+	FamilyVocoder   CodecFamily = "vocoder"   // LPC, MELP, GSM-FR (legacy speech model)
+	FamilyTransform CodecFamily = "transform" // MP3/AAC/CELT; video hybrids (H264/VP8) are listed as transform here
+	FamilyLossless  CodecFamily = "lossless"
+	FamilyHybrid    CodecFamily = "hybrid" // Mixed (e.g., Opus = SILK+CELT)
+	FamilyOther     CodecFamily = "other"
 
-		// Static video codecs
-		25: {25, "CelB", 1, 90000, "video"},
-		26: {26, "JPEG", 1, 90000, "video"},
-		28: {28, "nv", 1, 90000, "video"},
-		31: {31, "H261", 1, 90000, "video"},
-		32: {32, "MPV", 1, 90000, "video"},
-		33: {33, "MP2T", 1, 90000, "video"},
-		34: {34, "H263", 1, 90000, "video"},
-
-		// Dynamic audio codecs (common assignments)
-		96:  {96, "Opus", 2, 48000, "audio"},
-		97:  {97, "AMR", 1, 8000, "audio"},
-		98:  {98, "iLBC", 1, 8000, "audio"},
-		99:  {99, "G726-32", 1, 8000, "audio"},
-		100: {100, "AAC", 2, 48000, "audio"},
-
-		// Dynamic video codecs (common assignments)
-		101: {101, "VP8", 1, 90000, "video"},
-		102: {102, "VP9", 1, 90000, "video"},
-		103: {103, "H264", 1, 90000, "video"},
-		104: {104, "H265", 1, 90000, "video"},
-		105: {105, "AV1", 1, 90000, "video"},
-	}
+	// Media uses
+	UseAudio MediaUse = "audio"
+	UseVideo MediaUse = "video"
+	UseDTMF  MediaUse = "dtmf"
+	UseCN    MediaUse = "comfort-noise"
 )
 
-// get canonical codec name and its type
-func IdentifyPayloadTypeByName(name string) (uint8, string, bool) {
-	if AsciiToLower(name) == RFC4733 {
-		return 101, CodecTypeDTMF, true
+type CodecInfo struct {
+	PayloadType uint8
+	Name        string
+	ClockRate   int // Hz (audio) or RTP clock (video; usually 90000)
+	Channels    int // 0 for video / not-applicable
+	Use         MediaUse
+	Family      CodecFamily
+}
+
+// --- Static RTP payload types (RFC 3551) ---
+var codecsInfoMap = map[uint8]CodecInfo{
+	0:  {0, "PCMU", 8000, 1, UseAudio, FamilyWaveform},
+	1:  {1, "Reserved", 8000, 1, UseAudio, FamilyOther},
+	2:  {2, "G726-32", 8000, 1, UseAudio, FamilyWaveform},
+	3:  {3, "GSM", 8000, 1, UseAudio, FamilyVocoder},
+	4:  {4, "G723", 8000, 1, UseAudio, FamilyCELP},
+	5:  {5, "DVI4", 8000, 1, UseAudio, FamilyWaveform},
+	6:  {6, "DVI4", 16000, 1, UseAudio, FamilyWaveform},
+	7:  {7, "LPC", 8000, 1, UseAudio, FamilyVocoder},
+	8:  {8, "PCMA", 8000, 1, UseAudio, FamilyWaveform},
+	9:  {9, "G722", 8000, 1, UseAudio, FamilyWaveform}, // RTP clock remains 8 kHz
+	10: {10, "L16", 44100, 2, UseAudio, FamilyWaveform},
+	11: {11, "L16", 44100, 1, UseAudio, FamilyWaveform},
+	12: {12, "QCELP", 8000, 1, UseAudio, FamilyCELP},
+	13: {13, "CN", 8000, 1, UseCN, FamilyOther},
+	14: {14, "MPA", 90000, 2, UseAudio, FamilyTransform}, // MPEG audio
+	15: {15, "G728", 8000, 1, UseAudio, FamilyCELP},
+	16: {16, "DVI4", 11025, 1, UseAudio, FamilyWaveform},
+	17: {17, "DVI4", 22050, 1, UseAudio, FamilyWaveform},
+	18: {18, "G729", 8000, 1, UseAudio, FamilyCELP},
+	25: {25, "CelB", 90000, 0, UseVideo, FamilyOther},
+	26: {26, "JPEG", 90000, 0, UseVideo, FamilyOther},
+	28: {28, "NV", 90000, 0, UseVideo, FamilyOther},
+	31: {31, "H261", 90000, 0, UseVideo, FamilyOther},
+	32: {32, "MPV", 90000, 0, UseVideo, FamilyTransform},  // MPEG-1/2 Video
+	33: {33, "MP2T", 90000, 0, UseVideo, FamilyTransform}, // MPEG-2 TS
+	34: {34, "H263", 90000, 0, UseVideo, FamilyOther},
+
+	// --- Common dynamic payloads (typical assignments; negotiated in SDP) ---
+	96:  {96, "Opus", 48000, 2, UseAudio, FamilyHybrid}, // SILK (CELP) + CELT (transform)
+	97:  {97, "AMR", 8000, 1, UseAudio, FamilyCELP},
+	98:  {98, "AMR-WB", 16000, 1, UseAudio, FamilyCELP},
+	99:  {99, "iLBC", 8000, 1, UseAudio, FamilyCELP},
+	100: {100, "VP8", 90000, 0, UseVideo, FamilyTransform},
+	101: {101, "VP9", 90000, 0, UseVideo, FamilyTransform},
+	102: {102, "H264", 90000, 0, UseVideo, FamilyTransform},
+	103: {103, "H265", 90000, 0, UseVideo, FamilyTransform},
+	104: {104, "AV1", 90000, 0, UseVideo, FamilyTransform},
+	105: {105, "telephone-event", 8000, 1, UseDTMF, FamilyOther}, // RFC 4733 (often PT=101 as well)
+	106: {106, "CN", 16000, 1, UseCN, FamilyOther},               // WB CN
+	107: {107, "CN", 32000, 1, UseCN, FamilyOther},               // SWB CN
+	108: {108, "CN", 48000, 1, UseCN, FamilyOther},               // FB CN
+}
+
+// --- AMR / AMR-WB frame size tables (bytes per 20 ms frame, speech class A/B/C only; no SID) ---
+var amrFrameSizes = map[float64]int{
+	4.75: 12,
+	5.15: 13,
+	5.90: 15,
+	6.70: 17,
+	7.40: 19,
+	7.95: 20,
+	10.2: 27,
+	12.2: 31,
+}
+
+var amrWBFrameSizes = map[float64]int{
+	6.60:  17,
+	8.85:  23,
+	12.65: 32,
+	14.25: 36,
+	15.85: 40,
+	18.25: 46,
+	19.85: 50,
+	23.05: 58,
+	23.85: 60,
+}
+
+// FrameSize returns the RTP payload bytes for one packet of codec c,
+// given a frame duration in milliseconds (frameDurationMs).
+// For multi-mode codecs (AMR/AMR-WB/G.723.1), supply modeKbps to get exact sizes.
+// For variable-size codecs (e.g., Opus) or video, it returns 0 with no error (unknown).
+//
+// modeKbps usage:
+//   - G.723: 6.3 or 5.3 (kbps)
+//   - AMR: one of {4.75, 5.15, 5.90, 6.70, 7.40, 7.95, 10.2, 12.2}
+//   - AMR-WB: one of {6.60, 8.85, 12.65, 14.25, 15.85, 18.25, 19.85, 23.05, 23.85}
+func FrameSize(c CodecInfo, frameDurationMs int, modeKbps float64) (int, error) {
+	switch c.Name {
+	// --- Waveform codecs ---
+	case "PCMU", "PCMA": // 8-bit log PCM @ 8 kHz
+		samples := (c.ClockRate * frameDurationMs / 1000) * c.Channels
+		return samples, nil // 1 byte per sample
+
+	case "L16": // 16-bit linear PCM
+		samples := (c.ClockRate * frameDurationMs / 1000) * c.Channels
+		return samples * 2, nil
+
+	case "G722": // 64 kbps ADPCM; RTP clock is 8 kHz; 1 byte per (8 kHz) sample per channel
+		samples := (8000 * frameDurationMs / 1000) * c.Channels
+		return samples, nil
+
+	case "G726-32":
+		// Classic ADPCM @ 32 kbps → 4 bits/sample (0.5 bytes)
+		// Samples at 8 kHz → bytes = 8000 * dur * 0.5 * channels
+		samples := (c.ClockRate * frameDurationMs / 1000) * c.Channels
+		return samples / 2, nil
+
+	// --- Fixed-size CELP codecs ---
+	case "G729":
+		// 10 bytes per 10 ms speech frame @ 8 kHz
+		if frameDurationMs%10 != 0 {
+			return 0, fmt.Errorf("G.729 requires 10 ms multiples")
+		}
+		return (frameDurationMs / 10) * 10, nil
+
+	case "G728":
+		// 16 kbps LD-CELP. Base frame 2.5 ms = 5 bytes. So:
+		// bytes = (frameDurationMs / 2.5) * 5.
+		// Integer math: require frameDurationMs * 2 % 5 == 0
+		if (frameDurationMs*2)%5 != 0 {
+			return 0, fmt.Errorf("G.728 requires multiples of 2.5 ms")
+		}
+		frames := (frameDurationMs * 2) / 5 // number of 2.5 ms frames
+		return frames * 5, nil              // 5 bytes per 2.5 ms → 20 bytes/10 ms
+
+	case "iLBC":
+		// 20 ms = 38 bytes; 30 ms = 50 bytes
+		switch frameDurationMs {
+		case 20:
+			return 38, nil
+		case 30:
+			return 50, nil
+		default:
+			return 0, fmt.Errorf("iLBC supports 20 or 30 ms only")
+		}
+
+	case "G723":
+		// Two modes: 6.3 kbps = 24 bytes/30 ms, 5.3 kbps = 20 bytes/30 ms
+		if frameDurationMs%30 != 0 {
+			return 0, fmt.Errorf("G.723 requires 30 ms multiples")
+		}
+		switch modeKbps {
+		case 6.3:
+			return (frameDurationMs / 30) * 24, nil
+		case 5.3:
+			return (frameDurationMs / 30) * 20, nil
+		default:
+			return 0, fmt.Errorf("G.723 mode must be 6.3 or 5.3 kbps")
+		}
+
+	// --- AMR family (sizes per mode, 20 ms only) ---
+	case "AMR":
+		if frameDurationMs != 20 {
+			return 0, fmt.Errorf("AMR supports 20 ms frames only")
+		}
+		if sz, ok := amrFrameSizes[modeKbps]; ok {
+			return sz, nil
+		}
+		return 0, fmt.Errorf("unsupported AMR mode %.2f kbps", modeKbps)
+
+	case "AMR-WB":
+		if frameDurationMs != 20 {
+			return 0, fmt.Errorf("AMR-WB supports 20 ms frames only")
+		}
+		if sz, ok := amrWBFrameSizes[modeKbps]; ok {
+			return sz, nil
+		}
+		return 0, fmt.Errorf("unsupported AMR-WB mode %.2f kbps", modeKbps)
+
+	case "Opus":
+		// Valid durations: 2.5, 5, 10, 20, 40, 60 ms
+		switch frameDurationMs {
+		case 2, 5, 10, 20, 40, 60:
+			// Opus payload size varies with target bitrate/FEC/complexity.
+			return 0, nil
+		default:
+			return 0, fmt.Errorf("OPUS supports 2, 5, 10, 20, 40, or 60 ms") // using 2 instead of 2.5 due to int ms granularity
+		}
+
+	// --- Comfort Noise (RFC 3389) ---
+	case "CN":
+		// Typical SID payload sizes (approximate/common):
+		switch c.ClockRate {
+		case 8000:
+			return 2, nil // narrowband
+		case 16000:
+			return 3, nil // wideband
+		case 32000:
+			return 6, nil // super-wideband
+		case 48000:
+			return 6, nil // fullband
+		default:
+			return 0, fmt.Errorf("unsupported CN clock rate %d", c.ClockRate)
+		}
+
+	// --- DTMF (telephone-event, RFC 4733) ---
+	case "telephone-event":
+		// A single DTMF event report is 4 bytes; senders may repeat/extend,
+		// but per packet payload is typically 4 bytes.
+		return 4, nil
+
+	// Video & others: cannot know without encoding
+	case "H261", "H263", "H264", "H265", "VP8", "VP9", "AV1", "JPEG", "CelB", "MPV", "MP2T", "NV":
+		return 0, nil
+
+	default:
+		return 0, fmt.Errorf("frame size not implemented for codec %s", c.Name)
 	}
-	for payload, ci := range codecsInfoMap {
+}
+
+// get canonical codec name and its type
+func IdentifyPayloadTypeByName(name string) (CodecInfo, bool) {
+	var codecInfo CodecInfo
+	for _, ci := range codecsInfoMap {
 		if strings.EqualFold(ci.Name, name) {
-			return payload, ci.Type, true
+			return ci, true
 		}
 	}
-	return 0, "", false
+	return codecInfo, false
 }
