@@ -6,8 +6,9 @@ import (
 )
 
 const (
-	ContentType = "application/sdp"
-	RFC4733     = "telephone-event"
+	ContentType         = "application/sdp"
+	RFC4733             = "telephone-event"
+	DynamicPayloadStart = 96
 )
 
 const (
@@ -133,7 +134,7 @@ var codecsInfoMap = map[uint8]CodecInfo{
 	6:  {6, "DVI4", 16000, 1, UseAudio, FamilyWaveform},
 	7:  {7, "LPC", 8000, 1, UseAudio, FamilyVocoder},
 	8:  {8, "PCMA", 8000, 1, UseAudio, FamilyWaveform},
-	9:  {9, "G722", 8000, 1, UseAudio, FamilyWaveform}, // RTP clock remains 8 kHz
+	9:  {9, "G722", 8000, 1, UseAudio, FamilyWaveform}, // RTP clock remains 8 kHz, but it is actually 16 kHz
 	10: {10, "L16", 44100, 2, UseAudio, FamilyWaveform},
 	11: {11, "L16", 44100, 1, UseAudio, FamilyWaveform},
 	12: {12, "QCELP", 8000, 1, UseAudio, FamilyCELP},
@@ -152,7 +153,7 @@ var codecsInfoMap = map[uint8]CodecInfo{
 	34: {34, "H263", 90000, 0, UseVideo, FamilyOther},
 
 	// --- Common dynamic payloads (typical assignments; negotiated in SDP) ---
-	96:  {96, "Opus", 48000, 2, UseAudio, FamilyHybrid}, // SILK (CELP) + CELT (transform)
+	96:  {96, "opus", 48000, 2, UseAudio, FamilyHybrid}, // SILK (CELP) + CELT (transform)
 	97:  {97, "AMR", 8000, 1, UseAudio, FamilyCELP},
 	98:  {98, "AMR-WB", 16000, 1, UseAudio, FamilyCELP},
 	99:  {99, "iLBC", 8000, 1, UseAudio, FamilyCELP},

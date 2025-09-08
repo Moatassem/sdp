@@ -10,13 +10,21 @@ import (
 )
 
 // Parse reads session description from the buffer.
-func Parse(b []byte) (*Session, error) {
-	return ParseString(string(b))
+func Parse(b []byte, restoreMissingPTs bool) (*Session, []string, error) {
+	return ParseString(string(b), restoreMissingPTs)
 }
 
 // ParseString reads session description from the string.
-func ParseString(s string) (*Session, error) {
-	return NewDecoderString(s).Decode()
+func ParseString(s string, restoreMissingPTs bool) (*Session, []string, error) {
+	ses, err := NewDecoderString(s).Decode()
+	if err != nil {
+		return nil, nil, err
+	}
+	var unknowns []string
+	if restoreMissingPTs {
+		unknowns = ses.RestoreMissingRtpmaps()
+	}
+	return ses, unknowns, nil
 }
 
 // A Decoder reads a session description from a stream.

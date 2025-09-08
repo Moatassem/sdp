@@ -442,6 +442,30 @@ func (ses *Session) dropFlows(except bool, medTypes ...string) *Session {
 	return ses
 }
 
+func (ses *Session) RestoreMissingRtpmaps() []string {
+	var missing []string
+	for _, m := range ses.Media {
+		switch m.Type {
+		case Audio, Video:
+		default:
+			continue
+		}
+		for _, f := range m.Formats {
+			if f.Payload >= DynamicPayloadStart && f.Name != "" {
+				continue
+			}
+			if cinfo, ok := codecsInfoMap[f.Payload]; ok {
+				f.Name = cinfo.Name
+				f.ClockRate = cinfo.ClockRate
+				f.Channels = cinfo.Channels
+			} else {
+				missing = append(missing, fmt.Sprintf("Media Type: %s, Payload Type: %d", m.Type, f.Payload))
+			}
+		}
+	}
+	return missing
+}
+
 func (ses *Session) DisableFlowsExcept(medTypes ...string) *Session {
 	return ses.disableFlows(true, medTypes...)
 }
