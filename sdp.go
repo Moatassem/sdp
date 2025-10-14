@@ -904,6 +904,15 @@ func (m *Media) KeepOnlyFirstAudioCodecAlongRFC4733(audiofrmts ...string) (bool,
 	return true, false
 }
 
+func (m *Media) WithAtLeastOneAudioFormat() bool {
+	for _, frmt := range m.Formats {
+		if AsciiToLower(frmt.Name) != RFC4733 {
+			return true
+		}
+	}
+	return false
+}
+
 func (m *Media) OrderFormatsByName(filterformats ...string) {
 	if len(filterformats) == 0 || len(filterformats) == 1 && filterformats[0] == "*" {
 		return
@@ -951,25 +960,26 @@ func (m *Media) FormatNames() []string {
 	return names
 }
 
-func (m *Media) FilterFormatsByName(frmts ...string) {
-	m.findFormatByName(false, frmts...)
+func (m *Media) FilterFormatsByName(frmts ...string) bool {
+	return m.findFormatByName(false, frmts...)
+
 }
 
-func (m *Media) DropFormatsByName(frmts ...string) {
-	m.findFormatByName(true, frmts...)
+func (m *Media) DropFormatsByName(frmts ...string) bool {
+	return m.findFormatByName(true, frmts...)
 }
 
-func (m *Media) FilterFormatsByPayload(frmts ...uint8) {
-	m.findFormatByPayload(false, frmts...)
+func (m *Media) FilterFormatsByPayload(frmts ...uint8) bool {
+	return m.findFormatByPayload(false, frmts...)
 }
 
-func (m *Media) DropFormatsByPayload(frmts ...uint8) {
-	m.findFormatByPayload(true, frmts...)
+func (m *Media) DropFormatsByPayload(frmts ...uint8) bool {
+	return m.findFormatByPayload(true, frmts...)
 }
 
-func (m *Media) findFormatByName(drop bool, frmts ...string) {
+func (m *Media) findFormatByName(drop bool, frmts ...string) bool {
 	if len(frmts) == 0 {
-		return
+		return false
 	}
 	formatNames := make(map[string]struct{}, len(frmts))
 	for _, f := range frmts {
@@ -981,11 +991,12 @@ func (m *Media) findFormatByName(drop bool, frmts ...string) {
 		_, ok := formatNames[ff]
 		return ok
 	})
+	return m.WithAtLeastOneAudioFormat()
 }
 
-func (m *Media) findFormatByPayload(drop bool, frmts ...uint8) {
+func (m *Media) findFormatByPayload(drop bool, frmts ...uint8) bool {
 	if len(frmts) == 0 {
-		return
+		return false
 	}
 	formatPayloads := make(map[uint8]struct{}, len(frmts))
 	for _, v := range frmts {
@@ -995,6 +1006,7 @@ func (m *Media) findFormatByPayload(drop bool, frmts ...uint8) {
 		_, ok := formatPayloads[f.Payload]
 		return ok
 	})
+	return m.WithAtLeastOneAudioFormat()
 }
 
 func (m *Media) filterFormats(drop bool, matchFunc func(f *Format) bool) {
