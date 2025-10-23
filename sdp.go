@@ -861,60 +861,61 @@ func (m *Media) FormatByName(frmt string) *Format {
 	return nil
 }
 
-func (m *Media) KeepOnlyFirstAudioCodecAlongRFC4733(audiofrmts ...string) (bool, bool) {
+func (m *Media) KeepOnlyFirstAudioCodecAlongRFC4733(audioformats ...string) (withAudio, withDtmf bool) {
 	if len(m.Formats) == 0 {
-		return false, false
+		return
 	}
 
-	for i, f := range audiofrmts {
-		audiofrmts[i] = AsciiToLower(f)
+	audioformatMap := make(map[string]struct{}, len(audioformats))
+	for _, f := range audioformats {
+		audioformatMap[AsciiToLower(f)] = struct{}{}
 	}
 
-	var dtmfFormat, audioFormat *Format
+	selectedFormats := make([]*Format, 0, 2)
 
 	for _, f := range m.Formats {
-		if audioFormat != nil && dtmfFormat != nil {
+		if len(selectedFormats) == 2 {
 			break
 		}
-		if f.Name == RFC4733 {
-			if dtmfFormat == nil {
-				dtmfFormat = f
+		frmt := AsciiToLower(f.Name)
+		switch frmt {
+		case RFC4733:
+			if !withDtmf {
+				withDtmf = true
+				selectedFormats = append(selectedFormats, f)
 			}
-			continue
-		}
-		if audioFormat == nil {
-			if slices.Contains(audiofrmts, AsciiToLower(f.Name)) {
-				audioFormat = f
+		case ComfortNoiseLower:
+		default:
+			if !withAudio {
+				if _, ok := audioformatMap[frmt]; ok {
+					withAudio = true
+					selectedFormats = append(selectedFormats, f)
+				}
 			}
 		}
 	}
-	if audioFormat == nil {
-		return false, false
+
+	m.Formats = selectedFormats
+
+	return
+}
+
+func IsAudioFormat(format *Format) bool {
+	frmtnm := AsciiToLower(format.Name)
+	switch frmtnm {
+	case RFC4733, ComfortNoiseLower:
+		return false
 	}
-
-	m.Formats = make([]*Format, 0, 2)
-	m.Formats = append(m.Formats, audioFormat)
-
-	if dtmfFormat == nil {
-		return true, false
-	}
-
-	m.Formats = append(m.Formats, dtmfFormat)
-	return true, true
+	return true
 }
 
 func (m *Media) WithAtLeastOneAudioFormat() bool {
-	for _, frmt := range m.Formats {
-		if AsciiToLower(frmt.Name) != RFC4733 && frmt.Name != ComfortNoise {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(m.Formats, IsAudioFormat)
 }
 
 func (m *Media) GetFirstAudioFormat() string {
 	for _, frmt := range m.Formats {
-		if AsciiToLower(frmt.Name) != RFC4733 && frmt.Name != ComfortNoise {
+		if IsAudioFormat(frmt) {
 			return frmt.Name
 		}
 	}
