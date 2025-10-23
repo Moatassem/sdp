@@ -11,7 +11,7 @@ import (
 
 var epoch = time.Date(1900, time.January, 1, 0, 0, 0, 0, time.UTC)
 
-const DeltaRune rune = 'a' - 'A'
+const deltaRune rune = 'a' - 'A'
 
 func init() {
 	mapCodecs = map[uint8]string{
@@ -868,7 +868,7 @@ func (m *Media) KeepOnlyFirstAudioCodecAlongRFC4733(audioformats ...string) (wit
 
 	audioformatMap := make(map[string]struct{}, len(audioformats))
 	for _, f := range audioformats {
-		audioformatMap[AsciiToLower(f)] = struct{}{}
+		audioformatMap[asciiToLower(f)] = struct{}{}
 	}
 
 	selectedFormats := make([]*Format, 0, 2)
@@ -877,7 +877,7 @@ func (m *Media) KeepOnlyFirstAudioCodecAlongRFC4733(audioformats ...string) (wit
 		if len(selectedFormats) == 2 {
 			break
 		}
-		frmt := AsciiToLower(f.Name)
+		frmt := asciiToLower(f.Name)
 		switch frmt {
 		case RFC4733:
 			if !withDtmf {
@@ -900,22 +900,13 @@ func (m *Media) KeepOnlyFirstAudioCodecAlongRFC4733(audioformats ...string) (wit
 	return
 }
 
-func IsAudioFormat(format *Format) bool {
-	frmtnm := AsciiToLower(format.Name)
-	switch frmtnm {
-	case RFC4733, ComfortNoiseLower:
-		return false
-	}
-	return true
-}
-
 func (m *Media) WithAtLeastOneAudioFormat() bool {
-	return slices.ContainsFunc(m.Formats, IsAudioFormat)
+	return slices.ContainsFunc(m.Formats, func(f *Format) bool { return f.IsAudioFormat() })
 }
 
 func (m *Media) GetFirstAudioFormat() string {
 	for _, frmt := range m.Formats {
-		if IsAudioFormat(frmt) {
+		if frmt.IsAudioFormat() {
 			return frmt.Name
 		}
 	}
@@ -928,7 +919,7 @@ func (m *Media) OrderFormatsByName(filterformats ...string) {
 	}
 
 	for i, ff := range filterformats {
-		filterformats[i] = AsciiToLower(ff)
+		filterformats[i] = asciiToLower(ff)
 	}
 
 	filterformatsmap := make(map[string]struct{}, len(filterformats))
@@ -939,7 +930,7 @@ func (m *Media) OrderFormatsByName(filterformats ...string) {
 	formatsmap := make(map[string]*Format, len(m.Formats))
 	formats := make([]string, len(m.Formats))
 	for i, frmt := range m.Formats {
-		ff := AsciiToLower(frmt.Name)
+		ff := asciiToLower(frmt.Name)
 		formatsmap[ff] = frmt
 		formats[i] = ff
 	}
@@ -992,11 +983,11 @@ func (m *Media) findFormatByName(drop bool, frmts ...string) bool {
 	}
 	formatNames := make(map[string]struct{}, len(frmts))
 	for _, f := range frmts {
-		ff := AsciiToLower(f)
+		ff := asciiToLower(f)
 		formatNames[ff] = struct{}{}
 	}
 	m.filterFormats(drop, func(f *Format) bool {
-		ff := AsciiToLower(f.Name)
+		ff := asciiToLower(f.Name)
 		_, ok := formatNames[ff]
 		return ok
 	})
@@ -1038,6 +1029,15 @@ type Format struct {
 	Params    []string // "fmtp" attributes
 }
 
+func (f *Format) IsAudioFormat() bool {
+	frmtnm := asciiToLower(f.Name)
+	switch frmtnm {
+	case RFC4733, ComfortNoiseLower:
+		return false
+	}
+	return true
+}
+
 func (f *Format) String() string {
 	return f.Name
 }
@@ -1067,13 +1067,13 @@ func isRTP(media, proto string) bool {
 	}
 }
 
-func AsciiToLower(s string) string {
+func asciiToLower(s string) string {
 	var b strings.Builder
 	b.Grow(len(s))
 	for i := range len(s) {
 		c := s[i]
 		if 'A' <= c && c <= 'Z' {
-			c += byte(DeltaRune)
+			c += byte(deltaRune)
 		}
 		b.WriteByte(c)
 	}
