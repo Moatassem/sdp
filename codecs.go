@@ -6,8 +6,10 @@ import (
 )
 
 const (
-	ContentType         = "application/sdp"
-	RFC4733             = "telephone-event"
+	ContentType  = "application/sdp"
+	RFC4733      = "telephone-event"
+	ComfortNoise = "CN"
+
 	DynamicPayloadStart = 96
 )
 

@@ -876,7 +876,7 @@ func (m *Media) KeepOnlyFirstAudioCodecAlongRFC4733(audiofrmts ...string) (bool,
 		if audioFormat != nil && dtmfFormat != nil {
 			break
 		}
-		if f.Name == GetCodecName(RFC4733PT) {
+		if f.Name == RFC4733 {
 			if dtmfFormat == nil {
 				dtmfFormat = f
 			}
@@ -893,24 +893,32 @@ func (m *Media) KeepOnlyFirstAudioCodecAlongRFC4733(audiofrmts ...string) (bool,
 	}
 
 	m.Formats = make([]*Format, 0, 2)
-
 	m.Formats = append(m.Formats, audioFormat)
 
-	if dtmfFormat != nil {
-		m.Formats = append(m.Formats, dtmfFormat)
-		return true, true
+	if dtmfFormat == nil {
+		return true, false
 	}
 
-	return true, false
+	m.Formats = append(m.Formats, dtmfFormat)
+	return true, true
 }
 
 func (m *Media) WithAtLeastOneAudioFormat() bool {
 	for _, frmt := range m.Formats {
-		if AsciiToLower(frmt.Name) != RFC4733 {
+		if AsciiToLower(frmt.Name) != RFC4733 && frmt.Name != ComfortNoise {
 			return true
 		}
 	}
 	return false
+}
+
+func (m *Media) GetFirstAudioFormat() string {
+	for _, frmt := range m.Formats {
+		if AsciiToLower(frmt.Name) != RFC4733 && frmt.Name != ComfortNoise {
+			return frmt.Name
+		}
+	}
+	return ""
 }
 
 func (m *Media) OrderFormatsByName(filterformats ...string) {
