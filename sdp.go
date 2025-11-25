@@ -2,6 +2,7 @@ package sdp
 
 import (
 	"cmp"
+	"errors"
 	"fmt"
 	"net"
 	"slices"
@@ -315,25 +316,35 @@ func (ses *Session) GetEffectiveMediaIPv4(media *Media) string {
 	for i := range media.Connection {
 		return media.Connection[i].Address
 	}
+	if ses.Connection == nil {
+		return ""
+	}
 	return ses.Connection.Address
 }
 
 func (ses *Session) GetEffectiveMediaSocket(media *Media) string {
-	var ipv4 string
+	var (
+		mediaIPv4 string
+		sessAddr  string
+	)
 
 	for i := range media.Connection {
 		ip := media.Connection[i].Address
 		if ip != "" && ip != "0.0.0.0" {
-			ipv4 = ip
+			mediaIPv4 = ip
 			break
 		}
 	}
 
-	if ipv4 = cmp.Or(ipv4, ses.Connection.Address); ipv4 == "" || media.Port <= 0 {
+	if ses.Connection != nil {
+		sessAddr = ses.Connection.Address
+	}
+
+	if mediaIPv4 = cmp.Or(mediaIPv4, sessAddr); mediaIPv4 == "" || media.Port <= 0 {
 		return ""
 	}
 
-	return fmt.Sprintf("%s:%d", ipv4, media.Port)
+	return fmt.Sprintf("%s:%d", mediaIPv4, media.Port)
 }
 
 func (ses *Session) GetEffectiveConnectionForMedia(medType string) string {
@@ -345,14 +356,16 @@ func (ses *Session) GetEffectiveConnectionForMedia(medType string) string {
 	return ""
 }
 
-func (ses *Session) GetEffectiveMediaUdpAddr(medType string) *net.UDPAddr {
+func (ses *Session) GetEffectiveMediaUdpAddr(medType string) (*net.UDPAddr, error) {
 	media := ses.GetMediaFlow(medType)
 	if media == nil {
-		return nil
+		return nil, errors.New("media flow not exists")
 	}
 	skt := ses.GetEffectiveMediaSocket(media)
-	addr, _ := net.ResolveUDPAddr("udp", skt)
-	return addr
+	if skt == "" {
+		return nil, errors.New("cannot find any IPv4")
+	}
+	return net.ResolveUDPAddr("udp", skt)
 }
 
 func (ses *Session) GetMediaFlow(medType string) *Media {
