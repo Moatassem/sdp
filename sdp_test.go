@@ -458,7 +458,12 @@ a=ssrc:1353510947 cname:2750fc3735de930b
 		}
 		conn := ses.GetEffectiveMediaSocket(ses.GetMediaFlow(Audio))
 
-		addr := ses.GetEffectiveMediaUdpAddr(Audio)
+		addr, err := ses.GetEffectiveMediaUdpAddr(Audio)
+
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		if addr.String() != "176.44.48.134:4000" {
 			t.Errorf("expected connection to be %s, got %s", "176.44.48.134:4000", conn)
 		}
