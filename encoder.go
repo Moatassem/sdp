@@ -125,6 +125,9 @@ func (w writer) session(s *Session) writer {
 	if s.Mode != "" {
 		w = w.add('a').str(s.Mode)
 	}
+	if s.PTime != "" {
+		w = w.add('a').str(s.PTime)
+	}
 	for _, it := range s.Attributes {
 		w = w.add('a').attr(it)
 	}
@@ -168,6 +171,9 @@ func (w writer) media(m *Media) writer {
 	}
 	if m.Mode != "" {
 		w = w.add('a').str(m.Mode)
+	}
+	if m.PTime != "" {
+		w = w.add('a').str(m.PTime)
 	}
 	for _, it := range m.Attributes {
 		w = w.add('a').attr(it)

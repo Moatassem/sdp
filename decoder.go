@@ -121,6 +121,8 @@ func (d *Decoder) session(s *Session, f byte, v string) error {
 	case 'a':
 		a := d.attr(v)
 		switch a.Name {
+		case PTime:
+			s.PTime = a.Value
 		case Inactive, RecvOnly, SendOnly, SendRecv:
 			s.Mode = a.Name
 		default:
@@ -164,6 +166,8 @@ func (d *Decoder) media(m *Media, f byte, v string) error {
 	case 'a':
 		a := d.attr(v)
 		switch a.Name {
+		case PTime:
+			m.PTime = a.Value
 		case Inactive, RecvOnly, SendOnly, SendRecv:
 			m.Mode = a.Name
 		case "rtpmap", "rtcp-fb", "fmtp":

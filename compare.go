@@ -11,7 +11,7 @@ func (ses *Session) Equals(other *Session) bool {
 	}
 
 	if ses.Version != other.Version || ses.Name != other.Name || ses.Information != other.Information ||
-		ses.URI != other.URI || ses.Mode != other.Mode {
+		ses.URI != other.URI || ses.Mode != other.Mode || ses.PTime != other.PTime {
 		return false
 	}
 
@@ -63,7 +63,7 @@ func (m *Media) Equals(other *Media) bool {
 	}
 	if m.Type != other.Type || m.Port != other.Port ||
 		m.PortNum != other.PortNum || m.Proto != other.Proto || m.Information != other.Information ||
-		m.Mode != other.Mode || m.FormatDescr != other.FormatDescr {
+		m.Mode != other.Mode || m.PTime != other.PTime || m.FormatDescr != other.FormatDescr {
 		return false
 	}
 	if !compareConnectionsSlice(m.Connection, other.Connection) {

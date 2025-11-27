@@ -433,7 +433,6 @@ a=ssrc:7345055
 }
 
 func TestGetConnection(t *testing.T) {
-
 	t.Run("Set and Check Effective Socket", func(t *testing.T) {
 		ses, _, err := ParseString(`v=0
 o=- 3973036347 3973036347 IN IP4 176.44.48.134
@@ -829,6 +828,41 @@ a=ptime:20
 				t.Errorf("expected media port to be 0 for %s, got %d", media.Type, media.Port)
 			}
 		}
+	})
+
+	t.Run("Return PTime in Extended SDP Offer", func(t *testing.T) {
+		ses1, _, err := ParseString(`v=0
+o=- 206 1 IN IP4 192.168.1.101
+s=session
+c=IN IP4 192.168.1.5
+b=CT:1000
+t=0 0
+a=ptime:40
+m=audio 51624 RTP/AVP 97 101 13 0 8
+c=IN IP4 0.0.0.0
+a=rtcp:51625
+a=label:Audio
+a=sendrecv
+a=rtpmap:97 RED/8000
+a=rtpmap:101 telephone-event/8000
+a=fmtp:101 0-16
+a=rtpmap:13 CN/8000
+a=rtpmap:0 PCMU/8000
+a=rtpmap:8 PCMA/8000
+a=ptime:20
+`, false)
+		if err != nil {
+			t.Fatalf("failed to parse SDP: %v", err)
+		}
+
+		if ses1.PTime != "40" {
+			t.Errorf("expected 40 found %s", ses1.PTime)
+		}
+
+		if media := ses1.GetAudioMediaFlow(); media.PTime != "20" {
+			t.Errorf("expected 20 found %s", media.PTime)
+		}
+
 	})
 }
 

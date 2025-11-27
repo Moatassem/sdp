@@ -60,6 +60,7 @@ type Session struct {
 	Repeat      []*Repeat    // Repeat Times ("r=")
 	Attributes  Attributes   // Session Attributes ("a=")
 	Mode        string       // Streaming mode ("sendrecv", "recvonly", "sendonly", or "inactive")
+	PTime       string       // ptime:20 20ms
 	Media       []*Media     // Media Descriptions ("m=")
 }
 
@@ -74,6 +75,7 @@ func (s *Session) Clone() *Session {
 		Information: s.Information,
 		URI:         s.URI,
 		Mode:        s.Mode,
+		PTime:       s.PTime,
 	}
 
 	// Clone Origin
@@ -271,6 +273,7 @@ func NewSessionSDP(sesID, sesVer int64, ipv4, nm, ssrc, mdir string, port int, c
 					return nil
 				}(),
 				Mode:    mdir,
+				PTime:   "20",
 				Formats: formats,
 			},
 		},
@@ -300,14 +303,13 @@ func (ses *Session) GetAudioMediaFlow() *Media {
 
 func (ses *Session) GetEffectivePTime() string {
 	media := ses.GetAudioMediaFlow()
-	attrbnm := "ptime"
-	ptime := media.Attributes.Get(attrbnm)
-	if ptime != "" {
-		return ptime
+	ptValue := media.PTime
+	if ptValue != "" {
+		return ptValue
 	}
-	ptime = ses.Attributes.Get(attrbnm)
-	if ptime != "" {
-		return ptime
+	ptValue = ses.PTime
+	if ptValue != "" {
+		return ptValue
 	}
 	return "20"
 }
@@ -633,16 +635,18 @@ type Media struct {
 	Key         []*Key        // Encryption Keys ("k=")
 	Attributes                // Attributes ("a=")
 	Mode        string        // Streaming mode ("sendrecv", "recvonly", "sendonly", or "inactive")
-	Formats     []*Format     // Media Format for RTP/AVP or RTP/SAVP protocols ("rtpmap", "fmtp", "rtcp-fb")
-	FormatDescr string        // Media Format for other protocols
+	PTime       string
+	Formats     []*Format // Media Format for RTP/AVP or RTP/SAVP protocols ("rtpmap", "fmtp", "rtcp-fb")
+	FormatDescr string    // Media Format for other protocols
 }
 
-// Streaming modes.
 const (
 	SendRecv = "sendrecv"
 	SendOnly = "sendonly"
 	RecvOnly = "recvonly"
 	Inactive = "inactive"
+
+	PTime = "ptime"
 
 	Audio       = "audio"       //[RFC8866]
 	Video       = "video"       //[RFC8866]
@@ -702,7 +706,6 @@ const (
 	TcpDtlsBfcp       = "TCP/DTLS/BFCP"         // [RFC8856]
 	UdpBfcp           = "UDP/BFCP"              // [RFC8856]
 	UdpTlsBfcp        = "UDP/TLS/BFCP"          // [RFC8856]
-
 )
 
 func GetOriginatingMode(local string, putCallonHold bool) (string, bool) {
@@ -793,6 +796,7 @@ func (m *Media) clone(prt int) *Media {
 		Proto:       m.Proto,
 		Information: m.Information,
 		Mode:        newMode,
+		PTime:       m.PTime,
 		FormatDescr: m.FormatDescr,
 	}
 
