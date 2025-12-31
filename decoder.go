@@ -64,7 +64,7 @@ func (d *Decoder) Decode() (*Session, error) {
 		if len(s) < 2 || s[1] != '=' {
 			return nil, &errDecode{errFormat, line, s}
 		}
-		f, v := s[0], s[2:]
+		f, v := asciiToLowerByte(s[0]), s[2:]
 		if f == 'm' {
 			media = new(Media)
 			err = d.media(media, f, v)
@@ -368,7 +368,7 @@ func (d *Decoder) key(v string) *Key {
 
 func (d *Decoder) attr(v string) *Attr {
 	if p, ok := d.split(v, ':', 2); ok {
-		return &Attr{p[0], p[1]}
+		return &Attr{asciiToLower(p[0]), p[1]}
 	}
 	return &Attr{v, ""}
 }

@@ -1096,3 +1096,10 @@ func asciiToLower(s string) string {
 	}
 	return b.String()
 }
+
+func asciiToLowerByte(b byte) byte {
+	if 'A' <= b && b <= 'Z' {
+		b += byte(deltaRune)
+	}
+	return b
+}
