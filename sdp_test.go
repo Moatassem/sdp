@@ -169,6 +169,40 @@ a=sctpmap:5000 webrtc-datachannel 1024
 
 }
 
+func TestSetConnection(t *testing.T) {
+	sdpString := `v=0
+o=- 2508 1 IN IP4 192.168.1.2
+s=sipclientgo/1.0
+c=IN IP4 192.168.1.2
+t=0 0
+m=audio 51191 RTP/AVP 9 8 0 101
+a=rtpmap:9 G722/8000/3
+a=rtpmap:8 PCMA/8000/2
+a=rtpmap:0 PCMU/8000/1
+a=rtpmap:101 telephone-event/8000
+a=fmtp:101 0-16
+a=sendonly
+a=ssrc:7345055
+`
+
+	t.Run("SetConnection - media flow exists", func(t *testing.T) {
+		ses, _, _ := ParseString(sdpString, false)
+		ses.SetConnection("audio", "192.168.1.50", 4000, false, true)
+		if ses.Connection != nil {
+			t.Fatal("Session Connection should have been dropped")
+		}
+	})
+
+	t.Run("SetConnection - media flow does not exists", func(t *testing.T) {
+		ses, _, _ := ParseString(sdpString, false)
+		ses.SetConnection("video", "192.168.1.50", 4000, false, true)
+		if ses.Connection == nil {
+			t.Fatal("Session Connection should have been dropped")
+		}
+	})
+
+}
+
 func TestDropSDPByName(t *testing.T) {
 	t.Run("Parse SDP", func(t *testing.T) {
 		sdpString := `v=0

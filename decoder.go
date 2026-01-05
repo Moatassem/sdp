@@ -246,7 +246,7 @@ func (d *Decoder) proto(m *Media, v string) error {
 		return errFormat
 	}
 	formats := p[3]
-	m.Type, m.Proto = p[0], p[2]
+	m.Type, m.Proto = asciiToLower(p[0]), p[2]
 	p, ok = d.split(p[1], '/', 2)
 	var err error
 	if ok {

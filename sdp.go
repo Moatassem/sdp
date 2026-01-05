@@ -399,7 +399,10 @@ func (ses *Session) AlignMediaFlows(offer *Session) error {
 	return nil
 }
 
-func (ses *Session) SetConnection(medType, IPv4 string, Port int, setGlobal bool) *Session {
+// Parameters:
+//   - setGlobal: if true; removes c-line from Session level
+//   - removeGlobal: if true; remove c-line from Session level (only effective if setGlobal is false and medType exists)
+func (ses *Session) SetConnection(medType, ipv4 string, port int, setGlobal, removeGlobal bool) *Session {
 	if medType == "" {
 		return ses
 	}
@@ -407,7 +410,7 @@ func (ses *Session) SetConnection(medType, IPv4 string, Port int, setGlobal bool
 	conn := &Connection{
 		Network: NetworkInternet,
 		Type:    TypeIPv4,
-		Address: IPv4,
+		Address: ipv4,
 	}
 
 	if setGlobal {
@@ -415,20 +418,26 @@ func (ses *Session) SetConnection(medType, IPv4 string, Port int, setGlobal bool
 		for _, media := range ses.Media {
 			media.Connection = nil
 			if media.Type == medType {
-				media.Connection = nil
-				media.Port = Port
+				media.Port = port
 			}
 		}
+
 		return ses
 	}
 
+	mediaTypeFound := false
 	for _, media := range ses.Media {
 		if media.Type == medType {
 			media.Connection = nil
 			media.Connection = append(media.Connection, conn)
-			media.Port = Port
-			return ses
+			media.Port = port
+			mediaTypeFound = true
+			break
 		}
+	}
+
+	if mediaTypeFound && removeGlobal {
+		ses.Connection = nil
 	}
 
 	return ses
@@ -850,7 +859,7 @@ func (m *Media) clone(prt int) *Media {
 		mediaClone.Formats = make([]*Format, len(m.Formats))
 		for j, f := range m.Formats {
 			if f != nil {
-				mediaClone.Formats[j] = f.clone()
+				mediaClone.Formats[j] = f.Clone()
 			}
 		}
 	}
@@ -1059,7 +1068,7 @@ func (f *Format) String() string {
 	return f.Name
 }
 
-func (f *Format) clone() *Format {
+func (f *Format) Clone() *Format {
 	clone := &Format{
 		Payload:   f.Payload,
 		Name:      f.Name,
