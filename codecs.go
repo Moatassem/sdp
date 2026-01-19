@@ -29,7 +29,7 @@ const (
 	// DVI4   = 16
 	// DVI4   = 17
 	G729      uint8 = 18
-	Opus      uint8 = 107
+	Opus      uint8 = 96
 	RFC4733PT uint8 = 101
 )
 
