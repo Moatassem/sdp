@@ -6,11 +6,9 @@ import (
 )
 
 const (
-	ContentType       = "application/sdp"
-	RFC4733           = "telephone-event"
-	ComfortNoise      = "CN"
-	ComfortNoiseLower = "cn"
-
+	ContentType         = "application/sdp"
+	RFC4733             = "telephone-event"
+	ComfortNoise        = "cn"
 	DynamicPayloadStart = 96
 )
 
@@ -33,75 +31,11 @@ const (
 	G729      uint8 = 18
 	Opus      uint8 = 107
 	RFC4733PT uint8 = 101
-
-//	0,PCMU,8000,1
-//
-// 3,GSM,8000,1
-// 4,G723,8000,1
-// 5,DVI4,8000,1
-// 6,DVI4,16000,1
-// 7,LPC,8000,1
-// 8,PCMA,8000,1
-// 9,G722,8000,1
-// 11,L16,44100,1
-// 12,QCELP,8000,1
-// 13,CN,8000,1
-// 14,MPA,90000
-// 15,G728,8000,1
-// 16,DVI4,11025,1
-// 17,DVI4,22050,1
-// 18,G729,8000,1
 )
 
 var (
 	SupportedCodecsStringList = []string{"PCMA", "PCMU", "G722", "opus"} // "G729"
 )
-
-// var mapCodecs = map[uint8]string{
-// 	PCMU:      "PCMU",
-// 	GSM:       "GSM",
-// 	G723:      "G723",
-// 	DVI4:      "DVI4",
-// 	LPC:       "LPC",
-// 	PCMA:      "PCMA",
-// 	G722:      "G722",
-// 	L16:       "L16",
-// 	QCELP:     "QCELP",
-// 	CN:        "CN",
-// 	MPA:       "MPA",
-// 	G728:      "G728",
-// 	G729:      "G729",
-// 	Opus:      "opus",
-// 	RFC4733PT: "telephone-event",
-// }
-
-var mapCodecs = map[uint8]string{
-	0:   "PCMU",
-	3:   "GSM",
-	4:   "G723",
-	5:   "DVI4",
-	6:   "DVI4",
-	7:   "LPC",
-	8:   "PCMA",
-	9:   "G722",
-	10:  "L16",
-	11:  "L16",
-	12:  "QCELP",
-	13:  "CN",
-	14:  "MPA",
-	15:  "G728",
-	16:  "DVI4",
-	17:  "DVI4",
-	18:  "G729",
-	25:  "CelB",
-	26:  "JPEG",
-	31:  "H261",
-	32:  "MPV",
-	33:  "MP2T",
-	34:  "H263",
-	101: "telephone-event",
-	107: "opus",
-}
 
 type CodecFamily string
 type MediaUse string
@@ -162,19 +96,19 @@ var codecsInfoMap = map[uint8]CodecInfo{
 	34: {34, "H263", 90000, 0, UseVideo, FamilyOther},
 
 	// --- Common dynamic payloads (typical assignments; negotiated in SDP) ---
-	97:  {97, "AMR", 8000, 1, UseAudio, FamilyCELP},
-	98:  {98, "AMR-WB", 16000, 1, UseAudio, FamilyCELP},
-	99:  {99, "iLBC", 8000, 1, UseAudio, FamilyCELP},
-	100: {100, "VP8", 90000, 0, UseVideo, FamilyTransform},
-	101: {101, "VP9", 90000, 0, UseVideo, FamilyTransform},
+	96: {96, "opus", 48000, 2, UseAudio, FamilyHybrid}, // SILK (CELP) + CELT (transform)
+	97: {97, "AMR", 8000, 1, UseAudio, FamilyCELP},
+	98: {98, "AMR-WB", 16000, 1, UseAudio, FamilyCELP},
+	99: {99, "iLBC", 8000, 1, UseAudio, FamilyCELP},
+	// 100: {100, "VP8", 90000, 0, UseVideo, FamilyTransform},
+	// 101: {101, "VP9", 90000, 0, UseVideo, FamilyTransform},
+	101: {101, "telephone-event", 8000, 1, UseDTMF, FamilyOther}, // RFC 4733 (often PT=101 as well)
 	102: {102, "H264", 90000, 0, UseVideo, FamilyTransform},
 	103: {103, "H265", 90000, 0, UseVideo, FamilyTransform},
 	104: {104, "AV1", 90000, 0, UseVideo, FamilyTransform},
-	105: {105, "telephone-event", 8000, 1, UseDTMF, FamilyOther}, // RFC 4733 (often PT=101 as well)
-	// 106: {106, "CN", 16000, 1, UseCN, FamilyOther},               // WB CN
-	// 107: {107, "CN", 32000, 1, UseCN, FamilyOther},               // SWB CN
-	// 108: {108, "CN", 48000, 1, UseCN, FamilyOther},               // FB CN
-	107: {107, "opus", 48000, 2, UseAudio, FamilyHybrid}, // SILK (CELP) + CELT (transform)
+	106: {106, "CN", 16000, 1, UseCN, FamilyOther}, // WB CN
+	107: {107, "CN", 32000, 1, UseCN, FamilyOther}, // SWB CN
+	108: {108, "CN", 48000, 1, UseCN, FamilyOther}, // FB CN
 }
 
 // --- AMR / AMR-WB frame size tables (bytes per 20 ms frame, speech class A/B/C only; no SID) ---
@@ -351,8 +285,8 @@ func GetCodecNames(payloadType ...uint8) []string {
 	}
 	codecs := make([]string, len(payloadType))
 	for i, pt := range payloadType {
-		if name, ok := mapCodecs[pt]; ok {
-			codecs[i] = name
+		if cinfo, ok := codecsInfoMap[pt]; ok {
+			codecs[i] = cinfo.Name
 		} else {
 			codecs[i] = "Unknown"
 		}
@@ -361,8 +295,8 @@ func GetCodecNames(payloadType ...uint8) []string {
 }
 
 func GetCodecName(pt uint8) string {
-	if name, ok := mapCodecs[pt]; ok {
-		return name
+	if cinfo, ok := codecsInfoMap[pt]; ok {
+		return cinfo.Name
 	}
 	return "Unknown"
 }

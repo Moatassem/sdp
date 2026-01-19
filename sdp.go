@@ -252,17 +252,17 @@ func NewSessionSDP(sesID, sesVer int64, ipv4, nm, ssrc, mdir string, port int, c
 }
 
 func buildFormat(codec uint8) (*Format, error) {
-	name, ok := mapCodecs[codec]
+	cinfo, ok := codecsInfoMap[codec]
 	if !ok {
-		return nil, fmt.Errorf("unknown codec with payload %d", codec)
+		return nil, fmt.Errorf("unknown codec information with payload %d", codec)
 	}
 	frmt := &Format{
 		Payload:   codec,
-		Name:      name,
-		ClockRate: 8000,
-		Channels:  1,
+		Name:      cinfo.Name,
+		ClockRate: cinfo.ClockRate,
+		Channels:  cinfo.Channels,
 	}
-	if codec == RFC4733PT {
+	if cinfo.Name == RFC4733 {
 		frmt.Params = append(frmt.Params, "0-16")
 	}
 	return frmt, nil
@@ -881,7 +881,7 @@ func (m *Media) KeepOnlyFirstAudioCodecAlongRFC4733(audioformats ...string) (wit
 				withDtmf = true
 				selectedFormats = append(selectedFormats, f)
 			}
-		case ComfortNoiseLower:
+		case ComfortNoise:
 		default:
 			if !withAudio {
 				if _, ok := audioformatMap[frmt]; ok {
@@ -1029,7 +1029,7 @@ type Format struct {
 func (f *Format) IsAudioFormat() bool {
 	frmtnm := asciiToLower(f.Name)
 	switch frmtnm {
-	case RFC4733, ComfortNoiseLower:
+	case RFC4733, ComfortNoise:
 		return false
 	}
 	return true
