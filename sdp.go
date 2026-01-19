@@ -14,35 +14,6 @@ var epoch = time.Date(1900, time.January, 1, 0, 0, 0, 0, time.UTC)
 
 const deltaRune rune = 'a' - 'A'
 
-func init() {
-	mapCodecs = map[uint8]string{
-		0:   "PCMU",
-		3:   "GSM",
-		4:   "G723",
-		5:   "DVI4",
-		6:   "DVI4",
-		7:   "LPC",
-		8:   "PCMA",
-		9:   "G722",
-		10:  "L16",
-		11:  "L16",
-		12:  "QCELP",
-		13:  "CN",
-		14:  "MPA",
-		15:  "G728",
-		16:  "DVI4",
-		17:  "DVI4",
-		18:  "G729",
-		25:  "CelB",
-		26:  "JPEG",
-		31:  "H261",
-		32:  "MPV",
-		33:  "MP2T",
-		34:  "H263",
-		101: "telephone-event",
-	}
-}
-
 // Session represents an SDP session description.
 type Session struct {
 	Version     int          // Protocol Version ("v=")

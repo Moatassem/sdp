@@ -54,47 +54,53 @@ const (
 )
 
 var (
-	SupportedCodecsStringList = []string{"PCMA", "PCMU", "G722", "G729", "opus"}
+	SupportedCodecsStringList = []string{"PCMA", "PCMU", "G722", "opus"} // "G729"
 )
 
-func GetCodecNames(payloadType ...uint8) []string {
-	if len(payloadType) == 0 {
-		return nil
-	}
-	codecs := make([]string, len(payloadType))
-	for i, pt := range payloadType {
-		if name, ok := mapCodecs[pt]; ok {
-			codecs[i] = name
-		} else {
-			codecs[i] = "Unknown"
-		}
-	}
-	return codecs
-}
-
-func GetCodecName(pt uint8) string {
-	if name, ok := mapCodecs[pt]; ok {
-		return name
-	}
-	return "Unknown"
-}
+// var mapCodecs = map[uint8]string{
+// 	PCMU:      "PCMU",
+// 	GSM:       "GSM",
+// 	G723:      "G723",
+// 	DVI4:      "DVI4",
+// 	LPC:       "LPC",
+// 	PCMA:      "PCMA",
+// 	G722:      "G722",
+// 	L16:       "L16",
+// 	QCELP:     "QCELP",
+// 	CN:        "CN",
+// 	MPA:       "MPA",
+// 	G728:      "G728",
+// 	G729:      "G729",
+// 	Opus:      "opus",
+// 	RFC4733PT: "telephone-event",
+// }
 
 var mapCodecs = map[uint8]string{
-	PCMU:      "PCMU",
-	GSM:       "GSM",
-	G723:      "G723",
-	DVI4:      "DVI4",
-	LPC:       "LPC",
-	PCMA:      "PCMA",
-	G722:      "G722",
-	L16:       "L16",
-	QCELP:     "QCELP",
-	CN:        "CN",
-	MPA:       "MPA",
-	G728:      "G728",
-	G729:      "G729",
-	Opus:      "opus",
-	RFC4733PT: "telephone-event",
+	0:   "PCMU",
+	3:   "GSM",
+	4:   "G723",
+	5:   "DVI4",
+	6:   "DVI4",
+	7:   "LPC",
+	8:   "PCMA",
+	9:   "G722",
+	10:  "L16",
+	11:  "L16",
+	12:  "QCELP",
+	13:  "CN",
+	14:  "MPA",
+	15:  "G728",
+	16:  "DVI4",
+	17:  "DVI4",
+	18:  "G729",
+	25:  "CelB",
+	26:  "JPEG",
+	31:  "H261",
+	32:  "MPV",
+	33:  "MP2T",
+	34:  "H263",
+	96:  "opus",
+	101: "telephone-event",
 }
 
 type CodecFamily string
@@ -337,4 +343,26 @@ func IdentifyPayloadTypeByName(name string) (CodecInfo, bool) {
 		}
 	}
 	return codecInfo, false
+}
+
+func GetCodecNames(payloadType ...uint8) []string {
+	if len(payloadType) == 0 {
+		return nil
+	}
+	codecs := make([]string, len(payloadType))
+	for i, pt := range payloadType {
+		if name, ok := mapCodecs[pt]; ok {
+			codecs[i] = name
+		} else {
+			codecs[i] = "Unknown"
+		}
+	}
+	return codecs
+}
+
+func GetCodecName(pt uint8) string {
+	if name, ok := mapCodecs[pt]; ok {
+		return name
+	}
+	return "Unknown"
 }
