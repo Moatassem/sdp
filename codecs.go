@@ -31,7 +31,7 @@ const (
 	// DVI4   = 16
 	// DVI4   = 17
 	G729      uint8 = 18
-	Opus      uint8 = 96
+	Opus      uint8 = 107
 	RFC4733PT uint8 = 101
 
 //	0,PCMU,8000,1
@@ -99,8 +99,8 @@ var mapCodecs = map[uint8]string{
 	32:  "MPV",
 	33:  "MP2T",
 	34:  "H263",
-	96:  "opus",
 	101: "telephone-event",
+	107: "opus",
 }
 
 type CodecFamily string
@@ -162,7 +162,6 @@ var codecsInfoMap = map[uint8]CodecInfo{
 	34: {34, "H263", 90000, 0, UseVideo, FamilyOther},
 
 	// --- Common dynamic payloads (typical assignments; negotiated in SDP) ---
-	96:  {96, "opus", 48000, 2, UseAudio, FamilyHybrid}, // SILK (CELP) + CELT (transform)
 	97:  {97, "AMR", 8000, 1, UseAudio, FamilyCELP},
 	98:  {98, "AMR-WB", 16000, 1, UseAudio, FamilyCELP},
 	99:  {99, "iLBC", 8000, 1, UseAudio, FamilyCELP},
@@ -172,9 +171,10 @@ var codecsInfoMap = map[uint8]CodecInfo{
 	103: {103, "H265", 90000, 0, UseVideo, FamilyTransform},
 	104: {104, "AV1", 90000, 0, UseVideo, FamilyTransform},
 	105: {105, "telephone-event", 8000, 1, UseDTMF, FamilyOther}, // RFC 4733 (often PT=101 as well)
-	106: {106, "CN", 16000, 1, UseCN, FamilyOther},               // WB CN
-	107: {107, "CN", 32000, 1, UseCN, FamilyOther},               // SWB CN
-	108: {108, "CN", 48000, 1, UseCN, FamilyOther},               // FB CN
+	// 106: {106, "CN", 16000, 1, UseCN, FamilyOther},               // WB CN
+	// 107: {107, "CN", 32000, 1, UseCN, FamilyOther},               // SWB CN
+	// 108: {108, "CN", 48000, 1, UseCN, FamilyOther},               // FB CN
+	107: {107, "opus", 48000, 2, UseAudio, FamilyHybrid}, // SILK (CELP) + CELT (transform)
 }
 
 // --- AMR / AMR-WB frame size tables (bytes per 20 ms frame, speech class A/B/C only; no SID) ---
