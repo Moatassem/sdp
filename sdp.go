@@ -209,7 +209,7 @@ func (ses *Session) BuildEchoResponderAnswer(audiofrmts ...string) (*Session, bo
 func NewSessionSDP(sesID, sesVer int64, ipv4, nm, ssrc, mdir string, port int, codecs []uint8) (*Session, error) {
 	formats := make([]*Format, 0, len(codecs))
 	for _, codec := range codecs {
-		frmt, err := buildFormat(codec)
+		frmt, err := BuildFormat(codec)
 		if err != nil {
 			return nil, err
 		}
@@ -251,13 +251,30 @@ func NewSessionSDP(sesID, sesVer int64, ipv4, nm, ssrc, mdir string, port int, c
 	}, nil
 }
 
-func buildFormat(codec uint8) (*Format, error) {
+func BuildFormat(codec uint8) (*Format, error) {
 	cinfo, ok := codecsInfoMap[codec]
 	if !ok {
 		return nil, fmt.Errorf("unknown codec information with payload %d", codec)
 	}
 	frmt := &Format{
 		Payload:   codec,
+		Name:      cinfo.Name,
+		ClockRate: cinfo.ClockRate,
+		Channels:  cinfo.Channels,
+	}
+	if cinfo.Name == RFC4733 {
+		frmt.Params = append(frmt.Params, "0-16")
+	}
+	return frmt, nil
+}
+
+func BuildFormatByName(codecName string) (*Format, error) {
+	cinfo, ok := GetCodecByName(codecName)
+	if !ok {
+		return nil, fmt.Errorf("unknown codec information with name %s", codecName)
+	}
+	frmt := &Format{
+		Payload:   cinfo.PayloadType,
 		Name:      cinfo.Name,
 		ClockRate: cinfo.ClockRate,
 		Channels:  cinfo.Channels,

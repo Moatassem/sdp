@@ -34,7 +34,7 @@ const (
 )
 
 var (
-	SupportedCodecsStringList = []string{"PCMA", "PCMU", "G722", "opus"} // "G729"
+	SupportedCodecsStringList = []string{"opus", "G722", "PCMA", "PCMU"} // "G729"
 )
 
 type CodecFamily string
@@ -270,7 +270,7 @@ func FrameSize(c CodecInfo, frameDurationMs int, modeKbps float64) (int, error) 
 }
 
 // get canonical codec name and its type
-func IdentifyPayloadTypeByName(name string) (CodecInfo, bool) {
+func GetCodecByName(name string) (CodecInfo, bool) {
 	var codecInfo CodecInfo
 	for _, ci := range codecsInfoMap {
 		if strings.EqualFold(ci.Name, name) {
