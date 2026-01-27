@@ -918,13 +918,22 @@ func (m *Media) WithAtLeastOneAudioFormat() bool {
 	return slices.ContainsFunc(m.Formats, func(f *Format) bool { return f.IsAudioFormat() })
 }
 
-func (m *Media) GetFirstAudioFormat() string {
+func (m *Media) GetFirstAudioFormatName() string {
 	for _, frmt := range m.Formats {
 		if frmt.IsAudioFormat() {
 			return frmt.Name
 		}
 	}
 	return ""
+}
+
+func (m *Media) GetFirstAudioFormat() *Format {
+	for _, frmt := range m.Formats {
+		if frmt.IsAudioFormat() {
+			return frmt
+		}
+	}
+	return nil
 }
 
 func (m *Media) IsRFC4733Available() bool {
