@@ -720,7 +720,7 @@ func GetOriginatingMode(local string, putCallonHold bool) (string, bool) {
 			local = SendRecv
 		case Inactive:
 			local = RecvOnly
-		case "":
+		case "", SendRecv:
 			local = SendRecv
 		default:
 			return "", false
