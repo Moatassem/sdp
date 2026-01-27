@@ -974,6 +974,15 @@ func (m *Media) FormatNames() []string {
 	return names
 }
 
+func (m *Media) FormatLowerNames() []string {
+	names := make([]string, len(m.Formats))
+	for i, f := range m.Formats {
+		names[i] = f.LowerName()
+	}
+
+	return names
+}
+
 func (m *Media) FilterFormatsByName(frmts ...string) bool {
 	return m.findFormatByName(false, frmts...)
 
@@ -1041,6 +1050,10 @@ type Format struct {
 	Channels  int
 	Feedback  []string // "rtcp-fb" attributes
 	Params    []string // "fmtp" attributes
+}
+
+func (f *Format) LowerName() string {
+	return asciiToLower(f.Name)
 }
 
 func (f *Format) IsAudioFormat() bool {
