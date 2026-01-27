@@ -176,7 +176,7 @@ func (ses *Session) Bytes() []byte {
 	return e.Bytes()
 }
 
-func (ses *Session) BuildEchoResponderAnswer(audiofrmts ...string) (*Session, bool, error) {
+func (ses *Session) BuildSelfAnswer(audiofrmts ...string) (*Session, bool, error) {
 	if len(audiofrmts) == 0 {
 		return nil, false, fmt.Errorf("cannot build EchoResponder answer: no audio formats provided")
 	}
@@ -189,7 +189,6 @@ func (ses *Session) BuildEchoResponderAnswer(audiofrmts ...string) (*Session, bo
 		}
 	}
 	answer := ses.Clone()
-	answer.Name = "EchoResponder"
 	answer.Mode = ""
 	answer.Origin.SessionVersion = 1
 

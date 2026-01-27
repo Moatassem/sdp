@@ -1195,7 +1195,7 @@ a=sctpmap:5000 webrtc-datachannel 1024
 			t.Fatalf("failed to parse SDP: %v", err)
 		}
 
-		if answer, _, err := ses.BuildEchoResponderAnswer("PCMA"); err != nil {
+		if answer, _, err := ses.BuildSelfAnswer("PCMA"); err != nil {
 			t.Errorf("expected error to be nil, got %s", err)
 		} else {
 			mf := answer.GetAudioMediaFlow()
@@ -1245,7 +1245,7 @@ a=sctpmap:5000 webrtc-datachannel 1024
 			t.Fatalf("failed to parse SDP: %v", err)
 		}
 
-		if answer, _, err := ses.BuildEchoResponderAnswer("opus"); err != nil {
+		if answer, _, err := ses.BuildSelfAnswer("opus"); err != nil {
 			t.Errorf("expected error to be nil, got %s", err)
 		} else {
 			mf := answer.GetAudioMediaFlow()

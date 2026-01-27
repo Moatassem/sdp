@@ -189,7 +189,7 @@ func compareAttributes(a, b Attributes) bool {
 		return false
 	}
 	for i := range a {
-		if a[i].Name != b[i].Name || a[i].Value != b[i].Value {
+		if asciiToLower(a[i].Name) != asciiToLower(b[i].Name) || a[i].Value != b[i].Value {
 			return false
 		}
 	}
@@ -212,7 +212,7 @@ func compareFormats(a, b *Format) bool {
 	if a == nil || b == nil {
 		return a == b
 	}
-	return a.Payload == b.Payload && a.Name == b.Name && a.ClockRate == b.ClockRate &&
+	return a.Payload == b.Payload && a.LowerName() == b.LowerName() && a.ClockRate == b.ClockRate &&
 		a.Channels == b.Channels && compareStringSlices(a.Feedback, b.Feedback) &&
 		compareStringSlices(a.Params, b.Params)
 }
