@@ -176,7 +176,7 @@ func (ses *Session) Bytes() []byte {
 	return e.Bytes()
 }
 
-func (ses *Session) BuildSelfAnswer(audiofrmts ...string) (*Session, bool, error) {
+func (ses *Session) BuildSelfAnswer(currentLocalMediaDirective string, audiofrmts ...string) (*Session, bool, error) {
 	if len(audiofrmts) == 0 {
 		return nil, false, fmt.Errorf("cannot build EchoResponder answer: no audio formats provided")
 	}
@@ -200,7 +200,7 @@ func (ses *Session) BuildSelfAnswer(audiofrmts ...string) (*Session, bool, error
 		return nil, false, fmt.Errorf("cannot build EchoResponder answer: no common audio formats found in audio media flow")
 	}
 
-	mf.Mode = NegotiateAnswerMode(SendRecv, ses.GetEffectiveMediaDirective())
+	mf.Mode = NegotiateAnswerMode(currentLocalMediaDirective, ses.GetEffectiveMediaDirective())
 
 	return answer, dtmffound, nil
 }
@@ -704,56 +704,60 @@ const (
 	UdpTlsBfcp        = "UDP/TLS/BFCP"          // [RFC8856]
 )
 
-func GetOriginatingMode(local string, putCallonHold bool) (string, bool) {
+func GetSubsequentMediaDirectiveMode(currentLocal string, putCallonHold bool) (out string, ok bool) {
 	if putCallonHold {
-		switch local {
+		switch currentLocal {
 		case "", SendRecv:
-			local = SendOnly
+			out = SendOnly
 		case RecvOnly:
-			local = Inactive
+			out = Inactive
 		default:
 			return "", false
 		}
 	} else {
-		switch local {
+		switch currentLocal {
 		case SendOnly:
-			local = SendRecv
+			out = SendRecv
 		case Inactive:
-			local = RecvOnly
+			out = RecvOnly
 		case "", SendRecv:
-			local = SendRecv
+			out = SendRecv
 		default:
 			return "", false
 		}
 	}
-	return local, true
+	return currentLocal, true
 }
 
 // NegotiateAnswerMode negotiates streaming mode.
-func NegotiateAnswerMode(local, remote string) string {
-	switch local {
-	case "", SendRecv:
-		switch remote {
-		case RecvOnly:
+func NegotiateAnswerMode(oldLocal, newRemote string) (newLocal string) {
+	if oldLocal == "" {
+		oldLocal = SendRecv
+	}
+	if newRemote == "" {
+		newRemote = SendRecv
+	}
+
+	switch newRemote {
+	case SendRecv:
+		switch oldLocal {
+		case RecvOnly, SendRecv:
+			return SendRecv
+		case Inactive, SendOnly:
 			return SendOnly
-		case SendOnly:
-			return RecvOnly
-		default:
-			return remote
 		}
-	case Inactive, SendOnly:
-		switch remote {
-		case SendRecv, RecvOnly:
-			return SendOnly
+	case SendOnly:
+		switch oldLocal {
+		case Inactive, RecvOnly, SendRecv:
+			return RecvOnly
 		}
 	case RecvOnly:
-		switch remote {
-		case SendOnly:
-			return RecvOnly
-		default:
-			return remote
+		switch oldLocal {
+		case Inactive, SendOnly, SendRecv:
+			return SendOnly
 		}
 	}
+
 	return Inactive
 }
 
