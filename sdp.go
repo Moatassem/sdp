@@ -753,8 +753,10 @@ func NegotiateAnswerMode(oldLocal, newRemote string) (newLocal string) {
 		}
 	case RecvOnly:
 		switch oldLocal {
-		case Inactive, SendOnly, SendRecv:
+		case Inactive, SendOnly:
 			return SendOnly
+		case SendRecv:
+			return SendRecv
 		}
 	}
 
