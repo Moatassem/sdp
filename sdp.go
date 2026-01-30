@@ -544,11 +544,12 @@ func (ses *Session) GetEffectiveMediaDirective() string {
 func (ses *Session) IsCallHeld() bool {
 	media := ses.GetAudioMediaFlow()
 	var mode string
-	if media != nil && media.Mode != "" {
+	switch {
+	case media != nil && media.Mode != "":
 		mode = media.Mode
-	} else if ses.Mode != "" {
+	case ses.Mode != "":
 		mode = ses.Mode
-	} else {
+	default:
 		mode = SendRecv
 	}
 	if IsMedDirHolding(mode) {
