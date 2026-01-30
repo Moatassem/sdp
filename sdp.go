@@ -164,6 +164,11 @@ func (s *Session) Clone() *Session {
 	return clone
 }
 
+// Deletes attribute by name
+func (s *Session) DeleteAttribute(name string) {
+	s.Attributes = slices.DeleteFunc(s.Attributes, func(at *Attr) bool { return at.Name == name })
+}
+
 // String returns the encoded session description as string.
 func (ses *Session) String() string {
 	return string(ses.Bytes())
@@ -630,7 +635,7 @@ type Media struct {
 	Connection  []*Connection // Connection Data ("c=")
 	Bandwidth   []*Bandwidth  // Bandwidth ("b=")
 	Key         []*Key        // Encryption Keys ("k=")
-	Attributes                // Attributes ("a=")
+	Attributes  Attributes    // Attributes ("a=")
 	Mode        string        // Streaming mode ("sendrecv", "recvonly", "sendonly", or "inactive")
 	PTime       string
 	Formats     []*Format // Media Format for RTP/AVP or RTP/SAVP protocols ("rtpmap", "fmtp", "rtcp-fb")
@@ -859,6 +864,11 @@ func (m *Media) clone(prt int) *Media {
 	}
 
 	return mediaClone
+}
+
+// Deletes attribute by name
+func (m *Media) DeleteAttribute(name string) {
+	m.Attributes = slices.DeleteFunc(m.Attributes, func(at *Attr) bool { return at.Name == name })
 }
 
 // FormatByPayload returns format description by payload type.
