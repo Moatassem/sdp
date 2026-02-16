@@ -953,12 +953,16 @@ func (m *Media) GetFirstAudioFormat() *Format {
 }
 
 func (m *Media) IsRFC4733Available() bool {
+	return m.GetFirstRFC4733() != nil
+}
+
+func (m *Media) GetFirstRFC4733() *Format {
 	for _, frmt := range m.Formats {
 		if frmt.LowerName() == RFC4733 {
-			return true
+			return frmt
 		}
 	}
-	return false
+	return nil
 }
 
 func (m *Media) OrderFormatsByName(filterformats ...string) {
