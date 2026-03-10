@@ -173,7 +173,7 @@ func (w writer) media(m *Media) writer {
 		w = w.add('a').str(m.Mode)
 	}
 	if m.PTime != "" {
-		w = w.add('a').str(m.PTime)
+		w = w.add('a').str("ptime:" + m.PTime)
 	}
 	for _, it := range m.Attributes {
 		w = w.add('a').attr(it)
