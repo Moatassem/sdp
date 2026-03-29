@@ -183,14 +183,14 @@ func (ses *Session) Bytes() []byte {
 
 func (ses *Session) BuildSelfAnswer(currentLocalMediaDirective string, audiofrmts ...string) (*Session, bool, error) {
 	if len(audiofrmts) == 0 {
-		return nil, false, fmt.Errorf("cannot build EchoResponder answer: no audio formats provided")
+		return nil, false, fmt.Errorf("cannot build self answer: no audio formats provided")
 	}
 
 	if mf := ses.GetAudioMediaFlow(); mf == nil {
-		return nil, false, fmt.Errorf("cannot build EchoResponder answer: no audio media flow found")
+		return nil, false, fmt.Errorf("cannot build self answer: no audio media flow found")
 	} else {
 		if mf.Port == 0 {
-			return nil, false, fmt.Errorf("cannot build EchoResponder answer: audio media flow is disabled")
+			return nil, false, fmt.Errorf("cannot build self answer: audio media flow is disabled")
 		}
 	}
 	answer := ses.Clone()
@@ -202,7 +202,7 @@ func (ses *Session) BuildSelfAnswer(currentLocalMediaDirective string, audiofrmt
 	audiofound, dtmffound := mf.KeepOnlyFirstAudioCodecAlongRFC4733(audiofrmts...)
 
 	if !audiofound {
-		return nil, false, fmt.Errorf("cannot build EchoResponder answer: no common audio formats found in audio media flow")
+		return nil, false, fmt.Errorf("cannot build self answer: no common audio formats found in audio media flow")
 	}
 
 	mf.Mode = NegotiateAnswerMode(currentLocalMediaDirective, ses.GetEffectiveMediaDirective())
@@ -467,7 +467,7 @@ func (ses *Session) RestoreMissingRtpmaps() []string {
 			continue
 		}
 		for _, f := range m.Formats {
-			if f.Payload >= DynamicPayloadStart && f.Name != "" {
+			if f.Payload >= DynamicPayloadStart || f.Name != "" {
 				continue
 			}
 			if cinfo, ok := codecsInfoMap[f.Payload]; ok {

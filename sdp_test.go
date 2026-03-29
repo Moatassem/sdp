@@ -1156,7 +1156,7 @@ a=sctpmap:5000 webrtc-datachannel 1024
 	})
 }
 
-func TestBuildEchoResponderAnswer(t *testing.T) {
+func TestBuildSelfAnswer(t *testing.T) {
 
 	t.Run("Generate SDP Answer for SendRecv", func(t *testing.T) {
 		sdpString := `v=0
